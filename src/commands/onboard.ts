@@ -1,7 +1,7 @@
 import { Command } from "commander";
 import * as readline from "readline";
 import { getConfigStore } from "../core/config";
-import { createLogger } from "../core/logger";
+import { logger } from "../utils/logger";
 
 // ─── ANSI Helpers ──────────────────────────────────────────────────
 const c = {
@@ -73,7 +73,6 @@ export function registerOnboardCommand(program: Command): void {
     .command("onboard")
     .description("First-time setup wizard")
     .action(async () => {
-      const logger = createLogger();
       const store = getConfigStore();
 
       const rl = readline.createInterface({
