@@ -1,87 +1,105 @@
 # KramScan 🛡️
 
-KramScan is a personal, AI-powered command-line interface (CLI) for web application security testing. It combines automated browser interactions (via Puppeteer) with AI analysis to identify vulnerabilities in modern web apps.
+KramScan is a powerful, AI-powered command-line interface (CLI) for web application security testing. It combines automated browser interactions (via Puppeteer) with AI analysis to identify vulnerabilities in modern web apps.
 
 ---
 
-## Quick Start
+## 🚀 Quick Start
+
+### Installation
+Install KramScan globally via npm:
 
 ```bash
-# Install dependencies
-npm install
+npm install -g kramscan
+```
 
-# Build the project
-npm run build
+### Usage
+Once installed, you can start using it immediately:
 
-# Link globally so you can use "kramscan" from anywhere
-npm link
-
+```bash
 # Launch the interactive dashboard
 kramscan
+
+# Or run a scan directly
+kramscan scan https://example.com
+```
+
+### Run with npx
+You can also run it without installation:
+```bash
+npx kramscan scan https://example.com
 ```
 
 ---
 
-## Commands
+## 🛠️ Commands
 
 | Command            | Description                          | Status       |
 |:-------------------|:-------------------------------------|:-------------|
 | `kramscan`         | Launch interactive dashboard         | ✅ Active    |
 | `kramscan onboard` | First-time setup wizard              | ✅ Active    |
-| `kramscan scan`    | Scan a target URL                    | 🔜 Coming   |
-| `kramscan analyze` | AI-powered analysis of scan results  | 🔜 Coming   |
-| `kramscan report`  | Generate a professional report       | 🔜 Coming   |
-| `kramscan doctor`  | Check environment health             | 🔜 Coming   |
+| `kramscan scan`    | Scan a target URL for vulnerabilities| ✅ Active    |
+| `kramscan analyze` | AI-powered analysis of scan results  | ✅ Active    |
+| `kramscan report`  | Generate a professional report       | ✅ Active    |
+| `kramscan doctor`  | Check environment health             | ✅ Active    |
 | `kramscan --help`  | Show all available commands          | ✅ Active    |
 
 ---
 
-## Setup Wizard
+## ⚙️ Setup Wizard
 
-Run `kramscan onboard` to configure:
+Run `kramscan onboard` to configure your environment:
 
 1. **AI Provider** — OpenAI or Anthropic
 2. **API Key** — Your provider API key
-3. **Default Model** — e.g. `gpt-4`
+3. **Default Model** — e.g. `gpt-4` or `claude-3-opus`
 4. **Report Format** — Word, TXT, or JSON
 5. **Scope Enforcement** — Strict mode on/off
 6. **Rate Limiting** — Requests per second
 
-Configuration is saved to `~/.kramscan/config.json`.
+Configuration is securely saved to `~/.kramscan/config.json`.
 
 ---
 
-## Development
+## 💻 Development
+
+If you want to contribute or build from source:
 
 ```bash
-# Run without building (using tsx)
-npx tsx src/index.ts
+# Clone the repository
+git clone https://github.com/shaikhakramshakil/kramscan.git
+cd kramscan
 
-# Run a specific command
-npx tsx src/index.ts onboard
+# Install dependencies
+npm install
 
 # Build
 npm run build
+
+# Link for local testing
+npm link
 ```
 
 ---
 
-## Tech Stack
+## 🧪 Tech Stack
 
 - **TypeScript** + **Node.js**
 - **Commander.js** — CLI framework
 - **Inquirer.js** — Interactive prompts
-- **Puppeteer** — Browser automation
-- **ConfigStore** — Persistent configuration
+- **Puppeteer** — Browser automation (Headless Chrome)
+- **AI-Powered** — Integration with OpenAI & Anthropic for vulnerability analysis
 
 ---
 
-## Author
+## 👤 Author
 
-**Akram** — *KramScan*
+**Akram Shaikh**
+- Website: [akramshaikh.me](https://akramshaikh.me)
+- GitHub: [@shaikhakramshakil](https://github.com/shaikhakramshakil)
 
 ---
 
-## License
+## 📄 License
 
-ISC
+MIT
