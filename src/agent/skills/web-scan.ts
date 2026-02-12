@@ -4,8 +4,7 @@
  * Tests for XSS, SQL injection, CSRF, and security header vulnerabilities
  */
 
-import { AgentSkill, ToolDefinition, AgentContext } from "../types";
-import { SkillResult, Finding } from "../../skills/types";
+import { AgentSkill, ToolDefinition, AgentContext, SkillResult, Finding } from "../types";
 import { Scanner } from "../../core/scanner";
 import { logger } from "../../utils/logger";
 

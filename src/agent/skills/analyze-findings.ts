@@ -3,8 +3,7 @@
  * AI-powered analysis of security scan results with remediation recommendations
  */
 
-import { AgentSkill, ToolDefinition, AgentContext } from "../types";
-import { SkillResult, Finding } from "../../skills/types";
+import { AgentSkill, ToolDefinition, AgentContext, SkillResult, Finding } from "../types";
 import { createAIClient } from "../../core/ai-client";
 import { logger } from "../../utils/logger";
 

@@ -12,7 +12,7 @@ import {
   ConfirmationPrompt,
 } from "./types";
 import { logger } from "../utils/logger";
-import { SkillResult } from "../skills/types";
+import { SkillResult } from "./types";
 
 export class SkillRegistry {
   private skills: Map<string, AgentSkill> = new Map();

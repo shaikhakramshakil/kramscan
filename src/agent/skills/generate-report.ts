@@ -3,8 +3,7 @@
  * Creates professional security reports in multiple formats (DOCX, TXT, JSON)
  */
 
-import { AgentSkill, ToolDefinition, AgentContext } from "../types";
-import { SkillResult, Finding } from "../../skills/types";
+import { AgentSkill, ToolDefinition, AgentContext, SkillResult, Finding } from "../types";
 import { logger } from "../../utils/logger";
 import * as fs from "fs/promises";
 import * as path from "path";
