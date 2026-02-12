@@ -2,7 +2,7 @@ import * as fs from "fs";
 import * as path from "path";
 import * as os from "os";
 
-export type AiProviderName = "openai" | "anthropic";
+export type AiProviderName = "openai" | "anthropic" | "gemini" | "openrouter" | "mistral" | "kimi";
 export type ReportFormat = "word" | "txt" | "json";
 
 export interface Config {

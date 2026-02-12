@@ -91,7 +91,14 @@ export function registerOnboardCommand(program: Command): void {
       store.set("ai.enabled", aiEnabled);
 
       if (aiEnabled) {
-        const aiProvider = await askList(rl, "Select AI provider", ["openai", "anthropic"], "openai");
+        const aiProvider = await askList(rl, "Select AI provider", [
+          "openai",
+          "anthropic",
+          "gemini",
+          "openrouter",
+          "mistral",
+          "kimi"
+        ], "openai");
         store.set("ai.provider", aiProvider);
 
         const apiKey = await askPassword(rl, "API key (leave blank to skip)");
@@ -99,8 +106,16 @@ export function registerOnboardCommand(program: Command): void {
           store.set("ai.apiKey", apiKey);
         }
 
-        const model = await ask(rl, "Default AI model", aiProvider === "openai" ? "gpt-4" : "claude-3-opus-20240229");
-        store.set("ai.model", model);
+        // Provider-specific default models
+        let defaultModel = "gpt-4";
+        if (aiProvider === "anthropic") defaultModel = "claude-3-5-sonnet-20241022";
+        else if (aiProvider === "gemini") defaultModel = "gemini-2.0-flash-exp";
+        else if (aiProvider === "openrouter") defaultModel = "anthropic/claude-3.5-sonnet";
+        else if (aiProvider === "mistral") defaultModel = "mistral-large-latest";
+        else if (aiProvider === "kimi") defaultModel = "moonshot-v1-8k";
+
+        const model = await ask(rl, "Default AI model", defaultModel);
+        store.set("ai.defaultModel", model);
       }
 
       // Report Configuration
