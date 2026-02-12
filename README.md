@@ -38,12 +38,76 @@ npx kramscan scan https://example.com
 | Command            | Description                          | Status       |
 |:-------------------|:-------------------------------------|:-------------|
 | `kramscan`         | Launch interactive dashboard         | ✅ Active    |
+| `kramscan agent`   | AI-powered interactive assistant     | ✅ Active    |
 | `kramscan onboard` | First-time setup wizard              | ✅ Active    |
 | `kramscan scan`    | Scan a target URL for vulnerabilities| ✅ Active    |
 | `kramscan analyze` | AI-powered analysis of scan results  | ✅ Active    |
 | `kramscan report`  | Generate a professional report       | ✅ Active    |
 | `kramscan doctor`  | Check environment health             | ✅ Active    |
 | `kramscan --help`  | Show all available commands          | ✅ Active    |
+
+---
+
+## 🤖 AI Agent (Interactive Mode)
+
+The KramScan Agent is an AI-powered security assistant that can understand natural language commands and execute security testing tasks through conversation.
+
+### Start the Agent
+
+```bash
+kramscan agent
+```
+
+### Agent Capabilities
+
+The agent can perform the following security tasks:
+
+- **🔍 Web Scan** - Scan websites for vulnerabilities (XSS, SQLi, CSRF, headers)
+- **🧠 Analyze Findings** - AI-powered analysis of scan results
+- **📄 Generate Reports** - Create professional DOCX, TXT, or JSON reports
+- **🩺 Health Check** - Verify system configuration and dependencies
+
+### Example Conversations
+
+```
+You: scan https://example.com
+Agent: I'll perform a comprehensive security scan of https://example.com.
+      This will check for XSS, SQL injection, CSRF vulnerabilities, and security headers.
+      
+      Would you like me to proceed? [Y/n/details]: Y
+      
+      [Executing web_scan skill...]
+      
+Agent: Scan complete! Found 3 vulnerabilities:
+      • 1 High: Missing CSRF token on login form
+      • 1 Medium: Clickjacking vulnerability  
+      • 1 Low: Server version disclosure
+      
+      Would you like me to analyze these findings? [Y/n]: Y
+
+You: create a report
+Agent: I'll generate a Word document report based on the previous scan results.
+      
+      ✓ Report saved to ~/.kramscan/reports/example.com-security-report-2025-...
+```
+
+### Agent Commands
+
+While in the agent, you can use these commands:
+
+- `help` - Show available commands
+- `status` - Show session status
+- `skills` - List available security skills
+- `clear` or `/new` - Clear conversation history
+- `exit` or `quit` - Exit the agent
+
+### Single Message Mode
+
+Send a one-off message without entering interactive mode:
+
+```bash
+kramscan agent --message "scan https://example.com"
+```
 
 ---
 

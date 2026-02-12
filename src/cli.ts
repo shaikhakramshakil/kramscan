@@ -5,6 +5,7 @@ import { registerAnalyzeCommand } from "./commands/analyze";
 import { registerReportCommand } from "./commands/report";
 import { registerConfigCommand } from "./commands/config";
 import { registerDoctorCommand } from "./commands/doctor";
+import { registerAgentCommand } from "./commands/agent";
 
 const CLI_VERSION = "0.1.0";
 
@@ -80,6 +81,7 @@ interface MenuChoice {
 }
 
 const menuChoices: MenuChoice[] = [
+  { label: "Agent", value: "agent", description: "AI-powered interactive security assistant", icon: "🤖", status: "active" },
   { label: "Onboard", value: "onboard", description: "First-time setup wizard", icon: "⚡", status: "active" },
   { label: "Scan", value: "scan", description: "Scan a target URL for vulnerabilities", icon: "🔍", status: "active" },
   { label: "Analyze", value: "analyze", description: "Deep AI analysis of scan results", icon: "🧠", status: "active" },
@@ -217,6 +219,7 @@ function createProgram(): Command {
   registerReportCommand(program);
   registerConfigCommand(program);
   registerDoctorCommand(program);
+  registerAgentCommand(program);
 
   return program;
 }
