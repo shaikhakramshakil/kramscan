@@ -1,4 +1,5 @@
 # KramScan 🛡️
+<img width="508" height="126" alt="image" src="https://github.com/user-attachments/assets/6439c670-8d73-4bdd-b8fa-c74de949a31e" />
 
 KramScan is a powerful, AI-powered command-line interface (CLI) for web application security testing. It combines automated browser interactions (via Puppeteer) with AI analysis to identify vulnerabilities in modern web apps.
 
