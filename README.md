@@ -1,293 +1,236 @@
-<p align="center">
-  <img width="508" height="126" alt="KramScan" src="https://github.com/user-attachments/assets/6439c670-8d73-4bdd-b8fa-c74de949a31e" />
-</p>
+<div align="center">
+  <img src="https://github.com/user-attachments/assets/6439c670-8d73-4bdd-b8fa-c74de949a31e" width="500" alt="KramScan Logo" />
 
-<h3 align="center">AI-Powered Web Application Security Testing CLI</h3>
+  <h3 align="center">AI-Powered Web Application Security Testing CLI</h3>
 
-<p align="center">
-  <a href="https://www.npmjs.com/package/kramscan"><img src="https://img.shields.io/npm/v/kramscan?style=flat-square&color=cb3837&logo=npm&logoColor=white" alt="npm version" /></a>
-  <a href="https://www.npmjs.com/package/kramscan"><img src="https://img.shields.io/npm/dm/kramscan?style=flat-square&color=blue" alt="npm downloads" /></a>
-  <a href="https://github.com/shaikhakramshakil/kramscan/blob/main/LICENSE"><img src="https://img.shields.io/github/license/shaikhakramshakil/kramscan?style=flat-square&color=green" alt="license" /></a>
-  <a href="https://github.com/shaikhakramshakil/kramscan"><img src="https://img.shields.io/github/stars/shaikhakramshakil/kramscan?style=flat-square&color=yellow" alt="stars" /></a>
-  <a href="https://nodejs.org"><img src="https://img.shields.io/badge/node-%3E%3D18-brightgreen?style=flat-square&logo=nodedotjs&logoColor=white" alt="node version" /></a>
-  <a href="https://www.typescriptlang.org"><img src="https://img.shields.io/badge/TypeScript-5.4-3178c6?style=flat-square&logo=typescript&logoColor=white" alt="TypeScript" /></a>
-</p>
+  <br />
 
-<p align="center">
-  <b>Scan</b> · <b>Analyze</b> · <b>Report</b> — all from your terminal.
-</p>
+  [![npm version](https://img.shields.io/npm/v/kramscan?style=for-the-badge&logo=npm&logoColor=white&color=cb3837)](https://www.npmjs.com/package/kramscan)
+  [![npm downloads](https://img.shields.io/npm/dm/kramscan?style=for-the-badge&logo=npm&logoColor=white&color=blue)](https://www.npmjs.com/package/kramscan)
+  [![License](https://img.shields.io/github/license/shaikhakramshakil/kramscan?style=for-the-badge&logo=github&logoColor=white&color=green)](https://github.com/shaikhakramshakil/kramscan/blob/main/LICENSE)
+  [![Stars](https://img.shields.io/github/stars/shaikhakramshakil/kramscan?style=for-the-badge&logo=github&logoColor=white&color=yellow)](https://github.com/shaikhakramshakil/kramscan)
+  [![TypeScript](https://img.shields.io/badge/TypeScript-5.4-3178c6?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org)
+  [![Node.js](https://img.shields.io/badge/Node.js-%3E%3D18-brightgreen?style=for-the-badge&logo=nodedotjs&logoColor=white)](https://nodejs.org)
+
+  <br />
+
+  🔬 **A next-generation security auditing tool that combines automated vulnerability scanning with multi-provider AI analysis.**
+
+  *Empowering developers and security researchers with institutional-grade insights and an interactive AI agent.*
+
+  <br />
+
+  [🌐 NPM Package](https://www.npmjs.com/package/kramscan) · [📖 Documentation](#-usage) · [🐞 Report Bug](https://github.com/shaikhakramshakil/kramscan/issues)
+
+</div>
+
+---
+
+<br />
+
+## 🚀 The Problem We Solve
+Web security is complex and often fragmented. Developers rely on multiple disjointed tools for scanning, manual testing, and reporting. Traditional automated scanners generate noise without context, and manual pentesting is time-consuming and expensive.
+
+**KramScan bridges this gap.** We provide a unified command-line interface that orchestrates headless browser scanning, scrapes critical security headers, and leverages **Generative AI** (OpenAI, Gemini, Anthropic) to analyze findings. It delivers actionable, human-readable insights alongside raw vulnerability data—all in seconds.
+
+<br />
 
 ---
 
-## ✨ Features
+<br />
 
-- 🔍 **Automated Vulnerability Scanning** — XSS, SQL Injection, CSRF, and insecure headers detection
-- 🤖 **AI-Powered Agent** — Interactive security assistant with natural language understanding
-- 🧠 **Multi-Provider AI Analysis** — OpenAI, Anthropic, Google Gemini, Mistral, OpenRouter & Kimi
-- 📄 **Professional Reports** — Generate DOCX, TXT, or JSON security reports
-- 🌐 **Headless Browser Testing** — Puppeteer-powered crawling for modern SPAs
-- ⚡ **CLI-First Design** — Fast, scriptable, and CI/CD friendly
+## ✨ Key Features
+| Feature | Description |
+| :--- | :--- |
+| 🔍 **Automated Vulnerability Engine** | Detects XSS, SQL Injection, CSRF, and insecure headers using Puppeteer-powered crawling. |
+| 🤖 **Interactive AI Agent** | A conversational security assistant that understands natural language commands like "scan example.com". |
+| 🧠 **Multi-Provider AI Analysis** | Supports OpenAI, Anthropic, Google Gemini, Mistral, OpenRouter, and Kimi (Moonshot). |
+| 📄 **Professional Reporting** | Generates detailed DOCX, TXT, and JSON reports with executive summaries and remediation steps. |
+| 🌐 **Headless Browser Testing** | Renders modern SPAs (Single Page Applications) to find vulnerabilities in dynamic content. |
+| ⚡ **CLI-First Architecture** | Optimized for speed, scriptability, and seamless integration into CI/CD pipelines. |
+
+<br />
 
 ---
+
+<br />
+
+## 🏗️ Architecture & Workflow
+
+```mermaid
+graph LR
+    A[User Command] --> B{CLI Controller};
+    B --> C[Scanner Module<br/>Puppeteer / Cheerio];
+    B --> D[AI Agent<br/>NLP Processing];
+    
+    C --> E[Vulnerability Detection<br/>XSS / SQLi / Headers];
+    C --> F[Data Aggregation];
+    
+    E & F --> G[AI Analysis Engine<br/>LLM Provider];
+    
+    G --> H[Risk Assessment<br/>Confidence Scoring];
+    H --> I[Report Generator<br/>DOCX / JSON / TXT];
+    I --> J((Final Output));
+```
+
+<br />
+
+---
+
+<br />
+
+## 🧪 Tech Stack
+<div align="center">
+
+| Component | Technology |
+| :--- | :--- |
+| **Runtime** | Node.js ≥ 18 |
+| **Language** | TypeScript 5.4 |
+| **CLI Framework** | Commander.js, Inquirer.js |
+| **Browser Automation** | Puppeteer (Headless Chrome) |
+| **AI Integration** | OpenAI SDK, Google Generative AI, Anthropic SDK |
+| **Reporting** | Docx, Chalk|
+| **Package Manager** | NPM / Yarn / PNPM |
+
+</div>
+
+<br />
+
+---
+
+<br />
+
+## 🧠 Supported AI Providers
+
+| Provider | SDK / Integration | Default Model |
+| :--- | :--- | :--- |
+| **OpenAI** | `openai` | `gpt-4` |
+| **Anthropic** | `@anthropic-ai/sdk` | `claude-3-5-sonnet-20241022` |
+| **Google Gemini** | `@google/generative-ai` | `gemini-2.0-flash-exp` |
+| **Mistral** | `@mistralai/mistralai` | `mistral-large-latest` |
+| **OpenRouter** | OpenAI-compatible | `anthropic/claude-3.5-sonnet` |
+| **Kimi** | OpenAI-compatible | `moonshot-v1-8k` |
+
+> Switch providers instantly with `kramscan onboard` or by editing `~/.kramscan/config.json`.
+
+<br />
+
+---
+
+<br />
 
 ## 🚀 Quick Start
 
-### Install globally
+### 1. Installation
+Install KramScan globally using npm:
 
 ```bash
 npm install -g kramscan
 ```
 
-### Or run directly with npx
-
-```bash
-npx kramscan scan https://example.com
-```
-
-### First-time setup
+### 2. First-Time Setup
+Initialize the configuration wizard to set up your AI provider and API keys:
 
 ```bash
 kramscan onboard
 ```
 
-> This walks you through configuring your AI provider, API key, default model, report format, and scan settings.
-
----
-
-## 📖 Usage
+### 3. Run a Scan
+Execute a full security scan on a target URL:
 
 ```bash
-# Launch the interactive dashboard
-kramscan
-
-# Scan a target URL
 kramscan scan https://example.com
-
-# Start the AI agent for conversational security testing
-kramscan agent
-
-# Analyze previous scan results with AI
-kramscan analyze
-
-# Generate a professional security report
-kramscan report
-
-# Check environment and dependency health
-kramscan doctor
 ```
 
----
-
-## 🛠️ Commands
-
-| Command              | Description                              | Status       |
-| :------------------- | :--------------------------------------- | :----------- |
-| `kramscan`           | Launch interactive dashboard             | ✅ Active    |
-| `kramscan agent`     | AI-powered interactive assistant         | ✅ Active    |
-| `kramscan onboard`   | First-time setup wizard                  | ✅ Active    |
-| `kramscan scan`      | Scan a target URL for vulnerabilities    | ✅ Active    |
-| `kramscan analyze`   | AI-powered analysis of scan results      | ✅ Active    |
-| `kramscan report`    | Generate a professional report           | ✅ Active    |
-| `kramscan doctor`    | Check environment health                 | ✅ Active    |
-| `kramscan config`    | View or update configuration             | ✅ Active    |
-| `kramscan --help`    | Show all available commands              | ✅ Active    |
+<br />
 
 ---
 
-## 🤖 AI Agent
+<br />
 
-KramScan includes an AI-powered security assistant that understands natural language and executes security tasks through conversation.
+## 📖 Usage & Commands
 
+| Command | Description | Status |
+| :--- | :--- | :---: |
+| `kramscan` | Launch the interactive dashboard menu. | ✅ Stable |
+| `kramscan scan <url>` | Run a comprehensive vulnerability scan. | ✅ Stable |
+| `kramscan agent` | Start the conversational AI security assistant. | ✅ Stable |
+| `kramscan analyze` | Analyze previous scan results using the configured AI. | ✅ Stable |
+| `kramscan report` | Generate a professional report from scan data. | ✅ Stable |
+| `kramscan onboard` | Run the configuration and setup wizard. | ✅ Stable |
+| `kramscan doctor` | Verify environment health and dependencies. | ✅ Stable |
+| `kramscan config` | View and edit current configuration settings. | ✅ Stable |
+
+<br />
+
+### Example Agent Session
 ```bash
-kramscan agent
-```
+$ kramscan agent
+> scan https://example.com
 
-**Capabilities:**
-
-| Skill             | Description                                              |
-| :---------------- | :------------------------------------------------------- |
-| 🔍 Web Scan       | Scan websites for XSS, SQLi, CSRF & header issues       |
-| 🧠 Analyze        | AI analysis of discovered vulnerabilities                |
-| 📄 Report         | Generate DOCX, TXT, or JSON security reports             |
-| 🩺 Health Check   | Verify system configuration and dependencies             |
-
-**Example session:**
-
-```
-You: scan https://example.com
 Agent: I'll perform a comprehensive security scan of https://example.com.
-       This will check for XSS, SQL injection, CSRF vulnerabilities, and security headers.
-
-       Would you like me to proceed? [Y/n/details]: Y
-
-       [Executing web_scan skill...]
-
-Agent: Scan complete! Found 3 vulnerabilities:
-       • 1 High: Missing CSRF token on login form
-       • 1 Medium: Clickjacking vulnerability
-       • 1 Low: Server version disclosure
-
-You: create a report
-Agent: ✓ Report saved to ~/.kramscan/reports/example.com-security-report-2025-...
+       Checking for XSS, SQLi, and missing headers...
+       [Scanning...]
+       
+Agent: Scan complete! Found 2 High severity issues.
+       Would you like me to generate a report?
 ```
 
-**In-agent commands:** `help` · `status` · `skills` · `clear` · `exit`
-
-**Single message mode:**
-
-```bash
-kramscan agent --message "scan https://example.com"
-```
+<br />
 
 ---
 
-## 🧠 Supported AI Providers
-
-| Provider     | SDK / Integration        | Default Model                     |
-| :----------- | :----------------------- | :-------------------------------- |
-| OpenAI       | `openai`                 | `gpt-4`                          |
-| Anthropic    | `@anthropic-ai/sdk`      | `claude-3-5-sonnet-20241022`     |
-| Google Gemini| `@google/generative-ai`  | `gemini-2.0-flash-exp`           |
-| Mistral      | `@mistralai/mistralai`   | `mistral-large-latest`           |
-| OpenRouter   | OpenAI-compatible        | `anthropic/claude-3.5-sonnet`    |
-| Kimi         | OpenAI-compatible        | `moonshot-v1-8k`                 |
-
-> Switch providers any time with `kramscan onboard` or by editing `~/.kramscan/config.json`.
-
----
-
-## 🔧 Environment Variables
-
-You can configure API keys via environment variables:
-
-| Variable | Description |
-|----------|-------------|
-| `OPENAI_API_KEY` | OpenAI API key |
-| `ANTHROPIC_API_KEY` | Anthropic API key |
-| `GEMINI_API_KEY` | Google Gemini API key |
-| `MISTRAL_API_KEY` | Mistral API key |
-| `OPENROUTER_API_KEY` | OpenRouter API key |
-| `KIMI_API_KEY` | Kimi API key |
-| `KRAMSCAN_DEBUG` | Enable debug mode |
-
----
-
-## ⚙️ Configuration
-
-Run the setup wizard to configure your environment:
-
-```bash
-kramscan onboard
-```
-
-| Setting              | Description                            | Default      |
-| :------------------- | :------------------------------------- | :----------- |
-| AI Provider          | Choose from 6 supported providers      | `openai`     |
-| API Key              | Your provider API key                  | —            |
-| Default Model        | Model used for analysis                | `gpt-4`      |
-| Report Format        | Output format for reports              | `word`       |
-| Strict Scope         | Limit scanning to target domain only   | `true`       |
-| Rate Limit           | Max requests per second                | `5`          |
-
-Configuration is persisted to `~/.kramscan/config.json`.
-
----
-
-## 🧪 Tech Stack
-
-| Technology       | Purpose                                     |
-| :--------------- | :------------------------------------------ |
-| TypeScript       | Type-safe codebase                          |
-| Node.js ≥ 18     | Runtime environment                         |
-| Commander.js     | CLI framework & argument parsing            |
-| Puppeteer        | Headless Chrome for browser automation      |
-| Inquirer.js      | Interactive terminal prompts                |
-| Docx             | Word document report generation             |
-| Multi-provider AI| OpenAI, Anthropic, Gemini, Mistral & more   |
-
----
-
-## 💻 Development
-
-```bash
-# Clone the repository
-git clone https://github.com/shaikhakramshakil/kramscan.git
-cd kramscan
-
-# Install dependencies
-npm install
-
-# Build the project
-npm run build
-
-# Link for local testing
-npm link
-
-# Run locally
-kramscan
-```
-
----
+<br />
 
 ## 🗺️ Roadmap
 
 - [x] Core vulnerability scanner (XSS, SQLi, CSRF, headers)
-- [x] AI-powered analysis with multiple providers
+- [x] Multi-provider AI analysis engine
 - [x] Interactive AI agent mode
 - [x] Professional report generation (DOCX, TXT, JSON)
-- [x] Configuration management & setup wizard
+- [x] Configuration wizard & management
 - [ ] Plugin system for custom scan modules
 - [ ] CI/CD integration (GitHub Actions, GitLab CI)
 - [ ] PDF report generation
-- [ ] Dashboard web UI
+- [ ] Web-based dashboard UI
+
+<br />
 
 ---
 
-## 🤝 Contributing
+<br />
 
-Contributions, issues, and feature requests are welcome!
+## 🔒 Security & Privacy
+- **Local Execution:** All scanning logic runs locally on your machine.
+- **API Key Safety:** AI provider API keys are stored securely in your local home directory and are never sent to our servers.
+- **Data Privacy:** Scan data is sent only to your chosen AI provider for analysis and is not stored by KramScan.
 
-1. Fork the repository
-2. Create your branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+<br />
 
 ---
+
+<br />
 
 ## 👤 Author
+<div align="center">
 
 **Akram Shaikh**
 
-[![Website](https://img.shields.io/badge/Website-akramshaikh.me-blue?style=flat-square&logo=google-chrome&logoColor=white)](https://akramshaikh.me)
-[![GitHub](https://img.shields.io/badge/GitHub-shaikhakramshakil-181717?style=flat-square&logo=github&logoColor=white)](https://github.com/shaikhakramshakil)
+[![Website](https://img.shields.io/badge/Website-akramshaikh.me-blue?style=for-the-badge&logo=google-chrome&logoColor=white)](https://akramshaikh.me)
+[![GitHub](https://img.shields.io/badge/GitHub-shaikhakramshakil-181717?style=for-the-badge&logo=github&logoColor=white)](https://github.com/shaikhakramshakil)
+[![LinkedIn](https://img.shields.io/badge/LinkedIn-0077B5?style=for-the-badge&logo=linkedin&logoColor=white)](https://www.linkedin.com/in/shaikhakramshakil/)
+
+</div>
+
+<br />
 
 ---
+
+<br />
 
 ## 📄 License
-
 This project is licensed under the **MIT License** — see the [LICENSE](LICENSE) file for details.
 
----
-
-## 🧪 Testing
-
-```bash
-# Run tests
-npm test
-
-# Run tests in watch mode
-npm run test:watch
-
-# Run linting
-npm run lint
-
-# Format code
-npm run format
-```
-
----
-
-<p align="center">
-  Made with ❤️ by <a href="https://akramshaikh.me">Akram Shaikh</a>
-</p>
+<div align="center">
+  <sub>Made with ❤️ by Akram Shaikh</sub>
+</div>
