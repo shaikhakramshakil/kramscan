@@ -6,8 +6,26 @@ import { registerReportCommand } from "./commands/report";
 import { registerConfigCommand } from "./commands/config";
 import { registerDoctorCommand } from "./commands/doctor";
 import { registerAgentCommand } from "./commands/agent";
+import { isDebugEnabled } from "./core/config";
 
 const CLI_VERSION = "0.1.0";
+
+let verboseMode = false;
+let debugMode = false;
+
+export function isVerbose(): boolean {
+  return verboseMode;
+}
+
+export function isDebug(): boolean {
+  return debugMode || isDebugEnabled();
+}
+
+export function debugLog(...args: unknown[]): void {
+  if (debugMode || isDebugEnabled()) {
+    console.log("[DEBUG]", ...args);
+  }
+}
 
 // ─── ANSI Color Helpers ────────────────────────────────────────────
 const c = {
@@ -211,7 +229,15 @@ function createProgram(): Command {
   program
     .name("kramscan")
     .description("KramScan — AI-powered web app security testing")
-    .version(CLI_VERSION);
+    .version(CLI_VERSION)
+    .option("-v, --verbose", "Enable verbose output")
+    .option("--debug", "Enable debug mode")
+    .hook("preAction", (thisCommand) => {
+      const opts = thisCommand.opts();
+      verboseMode = opts.verbose || false;
+      debugMode = opts.debug || false;
+    })
+    .enablePositionalOptions();
 
   registerOnboardCommand(program);
   registerScanCommand(program);

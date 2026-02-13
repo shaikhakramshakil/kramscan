@@ -156,6 +156,22 @@ kramscan agent --message "scan https://example.com"
 
 ---
 
+## 🔧 Environment Variables
+
+You can configure API keys via environment variables:
+
+| Variable | Description |
+|----------|-------------|
+| `OPENAI_API_KEY` | OpenAI API key |
+| `ANTHROPIC_API_KEY` | Anthropic API key |
+| `GEMINI_API_KEY` | Google Gemini API key |
+| `MISTRAL_API_KEY` | Mistral API key |
+| `OPENROUTER_API_KEY` | OpenRouter API key |
+| `KIMI_API_KEY` | Kimi API key |
+| `KRAMSCAN_DEBUG` | Enable debug mode |
+
+---
+
 ## ⚙️ Configuration
 
 Run the setup wizard to configure your environment:
@@ -251,6 +267,24 @@ Contributions, issues, and feature requests are welcome!
 ## 📄 License
 
 This project is licensed under the **MIT License** — see the [LICENSE](LICENSE) file for details.
+
+---
+
+## 🧪 Testing
+
+```bash
+# Run tests
+npm test
+
+# Run tests in watch mode
+npm run test:watch
+
+# Run linting
+npm run lint
+
+# Format code
+npm run format
+```
 
 ---
 

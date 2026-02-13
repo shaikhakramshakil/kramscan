@@ -4,14 +4,34 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 import { Mistral } from "@mistralai/mistralai";
 import { getConfig } from "./config";
 
-export interface AIResponse {
-    content: string;
-    usage?: {
-        promptTokens: number;
-        completionTokens: number;
-        totalTokens: number;
-    };
+function getApiKeyFromEnv(provider: string): string | undefined {
+  const envVars: Record<string, string> = {
+    openai: process.env.OPENAI_API_KEY,
+    anthropic: process.env.ANTHROPIC_API_KEY,
+    gemini: process.env.GEMINI_API_KEY,
+    mistral: process.env.MISTRAL_API_KEY,
+    openrouter: process.env.OPENROUTER_API_KEY,
+    kimi: process.env.KIMI_API_KEY,
+  };
+  return envVars[provider];
 }
+
+export function createAIClient(): AIClient {
+    const config = getConfig();
+
+    if (!config.ai.enabled) {
+        throw new Error("AI analysis is not enabled. Run 'kramscan onboard' first.");
+    }
+
+    const provider = config.ai.provider;
+    let apiKey = config.ai.apiKey || getApiKeyFromEnv(provider);
+    const model = config.ai.defaultModel;
+
+    if (!apiKey) {
+        throw new Error(
+            `No API key configured for ${provider}. Run 'kramscan onboard' or set ${provider.toUpperCase()}_API_KEY environment variable.`
+        );
+    }
 
 export interface AIClient {
     analyze(prompt: string): Promise<AIResponse>;

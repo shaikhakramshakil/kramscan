@@ -63,6 +63,22 @@ const defaults: Config = {
   }
 };
 
+function getEnvApiKey(provider: AiProviderName): string {
+  const envVars: Record<string, string> = {
+    openai: process.env.OPENAI_API_KEY || "",
+    anthropic: process.env.ANTHROPIC_API_KEY || "",
+    gemini: process.env.GEMINI_API_KEY || "",
+    mistral: process.env.MISTRAL_API_KEY || "",
+    openrouter: process.env.OPENROUTER_API_KEY || "",
+    kimi: process.env.KIMI_API_KEY || "",
+  };
+  return envVars[provider] || "";
+}
+
+export function isDebugEnabled(): boolean {
+  return process.env.KRAMSCAN_DEBUG === "true" || process.env.KRAMSCAN_DEBUG === "1";
+}
+
 // Simple JSON-file config store (replaces ESM-only 'conf' package)
 class ConfigStore {
   private configPath: string;
