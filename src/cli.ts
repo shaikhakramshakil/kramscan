@@ -149,6 +149,7 @@ async function showInteractiveMenu(): Promise<void> {
 
   return new Promise<void>((resolve) => {
     let selectedIndex = 0;
+    let inputHandler: ((key: Buffer) => void) | null = null;
 
     // Enable raw mode for arrow key support
     if (process.stdin.isTTY) {
@@ -158,7 +159,7 @@ async function showInteractiveMenu(): Promise<void> {
 
     renderMenu(-1); // Initial render (no cursor-up needed)
 
-    process.stdin.on("data", async (key: Buffer) => {
+    inputHandler = async (key: Buffer) => {
       const str = key.toString();
 
       if (str === "\x1b[A") {
@@ -175,6 +176,9 @@ async function showInteractiveMenu(): Promise<void> {
           process.stdin.setRawMode(false);
         }
         process.stdin.pause();
+        if (inputHandler) {
+          process.stdin.removeListener("data", inputHandler);
+        }
         rl.close();
 
         const selected = menuChoices[selectedIndex];
@@ -214,11 +218,16 @@ async function showInteractiveMenu(): Promise<void> {
           process.stdin.setRawMode(false);
         }
         process.stdin.pause();
+        if (inputHandler) {
+          process.stdin.removeListener("data", inputHandler);
+        }
         rl.close();
         console.log(`\n  ${c.gray}${c.dim}Interrupted. Goodbye! 👋${c.reset}\n`);
         process.exit(0);
       }
-    });
+    };
+
+    process.stdin.on("data", inputHandler);
   });
 }
 
