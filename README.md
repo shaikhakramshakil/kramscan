@@ -1,4 +1,4 @@
-﻿<div align="center">
+<div align="center">
   <img src="https://github.com/user-attachments/assets/6439c670-8d73-4bdd-b8fa-c74de949a31e" width="500" alt="KramScan Logo" />
 
   <h3 align="center">AI-Powered Web Application Security Testing CLI</h3>
@@ -14,13 +14,13 @@
 
   <br />
 
-  ðŸ”¬ **A next-generation security auditing tool that combines automated vulnerability scanning with multi-provider AI analysis.**
+  🔬 **A next-generation security auditing tool that combines automated vulnerability scanning with multi-provider AI analysis.**
 
-  *Empowering developers and security researchers with institutional-grade insights and an interactive AI agent.*
+  *Empowering developers and security researchers with institutional-grade insights, modular plugin architecture, and an interactive AI agent.*
 
   <br />
 
-  [ðŸŒ NPM Package](https://www.npmjs.com/package/kramscan) Â· [ðŸ“– Documentation](#-usage) Â· [ðŸž Report Bug](https://github.com/shaikhakramshakil/kramscan/issues)
+  [🌐 NPM Package](https://www.npmjs.com/package/kramscan) · [📖 Documentation](#-usage) · [🐞 Report Bug](https://github.com/shaikhakramshakil/kramscan/issues)
 
 </div>
 
@@ -28,10 +28,10 @@
 
 <br />
 
-## ðŸš€ The Problem We Solve
+## 🚀 The Problem We Solve
 Web security is complex and often fragmented. Developers rely on multiple disjointed tools for scanning, manual testing, and reporting. Traditional automated scanners generate noise without context, and manual pentesting is time-consuming and expensive.
 
-**KramScan bridges this gap.** We provide a unified command-line interface that orchestrates headless browser scanning, scrapes critical security headers, and leverages **Generative AI** (OpenAI, Gemini, Anthropic) to analyze findings. It delivers actionable, human-readable insights alongside raw vulnerability dataâ€”all in seconds.
+**KramScan bridges this gap.** We provide a unified command-line interface that orchestrates headless browser scanning, scrapes critical security headers, leverages **Generative AI** (OpenAI, Gemini, Anthropic) for analysis, and features a **modular plugin system** for extensibility. It delivers actionable, human-readable insights alongside raw vulnerability data—all in seconds.
 
 <br />
 
@@ -39,15 +39,18 @@ Web security is complex and often fragmented. Developers rely on multiple disjoi
 
 <br />
 
-## âœ¨ Key Features
+## ✨ Key Features
 | Feature | Description |
 | :--- | :--- |
-| ðŸ” **Automated Vulnerability Engine** | Detects XSS, SQL Injection, CSRF, and insecure headers using Puppeteer-powered crawling. |
-| ðŸ¤– **Interactive AI Agent** | A conversational security assistant that understands natural language commands like "scan example.com". |
-| ðŸ§  **Multi-Provider AI Analysis** | Supports OpenAI, Anthropic, Google Gemini, Mistral, OpenRouter, and Kimi (Moonshot). |
-| ðŸ“„ **Professional Reporting** | Generates detailed DOCX, TXT, and JSON reports with executive summaries and remediation steps. |
-| ðŸŒ **Headless Browser Testing** | Renders modern SPAs (Single Page Applications) to find vulnerabilities in dynamic content. |
-| âš¡ **CLI-First Architecture** | Optimized for speed, scriptability, and seamless integration into CI/CD pipelines. |
+| 🔍 **Automated Vulnerability Engine** | Detects XSS, SQL Injection, CSRF, insecure headers, and more using Puppeteer-powered crawling. |
+| 🔌 **Modular Plugin System** | Extensible architecture for custom vulnerability detection plugins. Built-in plugins for common vulnerabilities. |
+| 🤖 **Interactive AI Agent** | A conversational security assistant that understands natural language commands like "scan example.com". |
+| 🧠 **Multi-Provider AI Analysis** | Supports OpenAI, Anthropic, Google Gemini, Mistral, OpenRouter, and Kimi (Moonshot). |
+| 📊 **Event-Driven Feedback** | Real-time progress updates with dynamic spinners and live vulnerability alerts during scanning. |
+| 📄 **Professional Reporting** | Generates detailed PDF, DOCX, TXT, and JSON reports with executive summaries, remediation steps, and error tracking. |
+| 🌐 **Headless Browser Testing** | Renders modern SPAs (Single Page Applications) to find vulnerabilities in dynamic content. |
+| ⚡ **CLI-First Architecture** | Optimized for speed, scriptability, and seamless integration into CI/CD pipelines. |
+| 🛡️ **Error Resilience** | Continue scanning even if individual URLs or plugins fail. Comprehensive error tracking in reports. |
 
 <br />
 
@@ -55,22 +58,69 @@ Web security is complex and often fragmented. Developers rely on multiple disjoi
 
 <br />
 
-## ðŸ—ï¸ Architecture & Workflow
+## 🏗️ Architecture & Workflow
 
 ```mermaid
 graph LR
     A[User Command] --> B{CLI Controller};
-    B --> C[Scanner Module<br/>Puppeteer / Cheerio];
+    B --> C[Scanner Module<br/>Puppeteer / Plugin System];
     B --> D[AI Agent<br/>NLP Processing];
     
-    C --> E[Vulnerability Detection<br/>XSS / SQLi / Headers];
-    C --> F[Data Aggregation];
+    C --> E[Plugin Manager<br/>XSS / SQLi / Headers / CSRF];
+    E --> F[Vulnerability Detection];
+    C --> G[Event System<br/>Progress / Results];
     
-    E & F --> G[AI Analysis Engine<br/>LLM Provider];
+    F & G --> H[AI Analysis Engine<br/>LLM Provider];
     
-    G --> H[Risk Assessment<br/>Confidence Scoring];
-    H --> I[Report Generator<br/>DOCX / JSON / TXT];
-    I --> J((Final Output));
+    H --> I[Risk Assessment<br/>Confidence Scoring];
+    I --> J[Report Generator<br/>PDF / DOCX / JSON / TXT];
+    J --> K((Final Output<br/>+ Error Report));
+```
+
+<br />
+
+### Plugin Architecture
+
+KramScan now features a modular plugin system that makes extending vulnerability detection effortless:
+
+```
+src/plugins/
+├── types.ts              # Base interfaces and types
+├── PluginManager.ts      # Plugin orchestration
+├── index.ts             # Plugin exports
+└── vulnerabilities/     # Built-in plugins
+    ├── XSSPlugin.ts
+    ├── SQLInjectionPlugin.ts
+    ├── SecurityHeadersPlugin.ts
+    ├── SensitiveDataPlugin.ts
+    └── CSRFPlugin.ts
+```
+
+**Creating a custom plugin:**
+
+```typescript
+import { BaseVulnerabilityPlugin, PluginContext } from 'kramscan/plugins';
+
+export class MyCustomPlugin extends BaseVulnerabilityPlugin {
+  readonly name = "Custom Detector";
+  readonly type = "custom";
+  readonly description = "Detects custom vulnerability";
+  
+  async testParameter(context: PluginContext, param: string, value: string) {
+    // Your detection logic here
+    if (/* vulnerability found */) {
+      return this.success(this.createVulnerability(
+        "Custom Vulnerability",
+        "Description...",
+        context.url,
+        "high",
+        "Evidence...",
+        "Remediation..."
+      ));
+    }
+    return this.failure();
+  }
+}
 ```
 
 <br />
@@ -79,17 +129,18 @@ graph LR
 
 <br />
 
-## ðŸ§ª Tech Stack
+## 🧪 Tech Stack
 <div align="center">
 
 | Component | Technology |
 | :--- | :--- |
-| **Runtime** | Node.js â‰¥ 18 |
+| **Runtime** | Node.js ≥ 18 |
 | **Language** | TypeScript 5.4 |
 | **CLI Framework** | Commander.js, Inquirer.js |
 | **Browser Automation** | Puppeteer (Headless Chrome) |
 | **AI Integration** | OpenAI SDK, Google Generative AI, Anthropic SDK |
-| **Reporting** | Docx, Chalk|
+| **Schema Validation** | Zod |
+| **Reporting** | Docx, Puppeteer (PDF), Chalk |
 | **Package Manager** | NPM / Yarn / PNPM |
 
 </div>
@@ -100,7 +151,7 @@ graph LR
 
 <br />
 
-## ðŸ§  Supported AI Providers
+## 🧠 Supported AI Providers
 
 | Provider | SDK / Integration | Default Model |
 | :--- | :--- | :--- |
@@ -136,7 +187,7 @@ During `kramscan onboard`, KramScan will try to validate the model you entered a
 
 <br />
 
-## ðŸš€ Quick Start
+## 🚀 Quick Start
 
 ### 1. Installation
 Install KramScan globally using npm:
@@ -165,18 +216,18 @@ kramscan scan https://example.com
 
 <br />
 
-## ðŸ“– Usage & Commands
+## 📖 Usage & Commands
 
 | Command | Description | Status |
 | :--- | :--- | :---: |
-| `kramscan` | Launch the interactive dashboard menu. | âœ… Stable |
-| `kramscan scan <url>` | Run a comprehensive vulnerability scan. | âœ… Stable |
-| `kramscan agent` | Start the conversational AI security assistant. | âœ… Stable |
-| `kramscan analyze` | Analyze previous scan results using the configured AI. | âœ… Stable |
-| `kramscan report` | Generate a professional report from scan data. | âœ… Stable |
-| `kramscan onboard` | Run the configuration and setup wizard. | âœ… Stable |
-| `kramscan doctor` | Verify environment health and dependencies. | âœ… Stable |
-| `kramscan config` | View and edit current configuration settings. | âœ… Stable |
+| `kramscan` | Launch the interactive dashboard menu. | ✅ Stable |
+| `kramscan scan <url>` | Run a comprehensive vulnerability scan. | ✅ Stable |
+| `kramscan agent` | Start the conversational AI security assistant. | ✅ Stable |
+| `kramscan analyze` | Analyze previous scan results using the configured AI. | ✅ Stable |
+| `kramscan report` | Generate a professional report from scan data. | ✅ Stable |
+| `kramscan onboard` | Run the configuration and setup wizard. | ✅ Stable |
+| `kramscan doctor` | Verify environment health and dependencies. | ✅ Stable |
+| `kramscan config` | View and edit current configuration settings. | ✅ Stable |
 | `kramscan scans` | List and inspect recent scans. | ✅ Stable |
 | `kramscan ai` | AI helpers (model listing and connectivity test). | ✅ Stable |
 
@@ -211,6 +262,29 @@ You can disable it with:
 
 ```bash
 kramscan scan https://example.com --no-pdf
+```
+
+### Error Tracking and Recovery
+KramScan now features comprehensive error handling:
+
+- **Continue on Failure**: Scan continues even if individual URLs fail to load
+- **Plugin Error Isolation**: If one vulnerability plugin fails, others continue working
+- **Error Reports**: PDF reports include a "⚠️ Scan Errors & Skipped Items" section
+- **CLI Feedback**: Real-time error messages during scanning
+
+### Event-Driven Progress Feedback
+Watch your scan progress in real-time:
+
+```
+🔍 Starting Security Scan
+──────────────────────────────────────────────────
+
+✔ Initializing scanner...
+⠴ Crawling: https://example.com (5/30)
+⚠️ Found high vulnerability: Reflected Cross-Site Scripting (XSS)
+⠴ Continuing scan (1 vulns found)...
+⠴ Testing forms on https://example.com/login (3 forms)...
+✔ Scan complete!
 ```
 
 ### Scan History
@@ -248,17 +322,22 @@ Agent: Scan complete! Found 2 High severity issues.
 
 <br />
 
-## ðŸ—ºï¸ Roadmap
+## 🗺️ Roadmap
 
 - [x] Core vulnerability scanner (XSS, SQLi, CSRF, headers)
 - [x] Multi-provider AI analysis engine
 - [x] Interactive AI agent mode
 - [x] Professional report generation (DOCX, TXT, JSON)
 - [x] Configuration wizard & management
-- [ ] Plugin system for custom scan modules
+- [x] **Plugin system for custom scan modules** ✅
+- [x] **PDF report generation** ✅
+- [x] **Event-driven progress feedback** ✅
+- [x] **Error resilience and recovery** ✅
+- [x] **Zod schema validation** ✅
 - [ ] CI/CD integration (GitHub Actions, GitLab CI)
-- [ ] PDF report generation
 - [ ] Web-based dashboard UI
+- [ ] SARIF export format
+- [ ] OWASP ZAP integration
 
 <br />
 
@@ -266,10 +345,11 @@ Agent: Scan complete! Found 2 High severity issues.
 
 <br />
 
-## ðŸ”’ Security & Privacy
+## 🔒 Security & Privacy
 - **Local Execution:** All scanning logic runs locally on your machine.
 - **API Key Safety:** AI provider API keys are stored securely in your local home directory and are never sent to our servers.
 - **Data Privacy:** Scan data is sent only to your chosen AI provider for analysis and is not stored by KramScan.
+- **Error Tracking:** Failed scan attempts are logged locally for debugging but never transmitted.
 
 <br />
 
@@ -277,7 +357,7 @@ Agent: Scan complete! Found 2 High severity issues.
 
 <br />
 
-## ðŸ‘¤ Author
+## 👤 Author
 <div align="center">
 
 **Akram Shaikh**
@@ -294,10 +374,9 @@ Agent: Scan complete! Found 2 High severity issues.
 
 <br />
 
-## ðŸ“„ License
-This project is licensed under the **MIT License** â€” see the [LICENSE](LICENSE) file for details.
+## 📄 License
+This project is licensed under the **MIT License** — see the [LICENSE](LICENSE) file for details.
 
 <div align="center">
-  <sub>Made with â¤ï¸ by Akram Shaikh</sub>
+  <sub>Made with ❤️ by Akram Shaikh</sub>
 </div>
-
