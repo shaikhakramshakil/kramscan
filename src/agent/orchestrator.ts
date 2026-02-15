@@ -41,7 +41,7 @@ export class AgentOrchestrator {
    */
   async initialize(): Promise<void> {
     try {
-      this.aiClient = createAIClient();
+      this.aiClient = await createAIClient();
       logger.success("AI client initialized successfully");
     } catch (error) {
       logger.error(

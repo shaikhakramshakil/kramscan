@@ -69,7 +69,7 @@ export class HealthCheckSkill implements AgentSkill {
     }
 
     // Check configuration
-    const configCheck = this.checkConfiguration();
+    const configCheck = await this.checkConfiguration();
     checks.push(configCheck);
     if (configCheck.status !== "ok") {
       findings.push(this.createFinding(configCheck));
@@ -149,9 +149,9 @@ export class HealthCheckSkill implements AgentSkill {
     }
   }
 
-  private checkConfiguration(): HealthCheck {
+  private async checkConfiguration(): Promise<HealthCheck> {
     try {
-      const config = getConfig();
+      const config = await getConfig();
 
       if (!config.ai.enabled) {
         return {
@@ -187,7 +187,7 @@ export class HealthCheckSkill implements AgentSkill {
   }
 
   private async checkAIProvider(): Promise<HealthCheck> {
-    const config = getConfig();
+    const config = await getConfig();
 
     if (!config.ai.enabled || !config.ai.apiKey) {
       return {
@@ -201,7 +201,7 @@ export class HealthCheckSkill implements AgentSkill {
     try {
       // Try to create AI client
       const { createAIClient } = await import("../../core/ai-client");
-      const client = createAIClient();
+      const client = await createAIClient();
 
       // Simple test prompt
       const response = await client.analyze("Hello");

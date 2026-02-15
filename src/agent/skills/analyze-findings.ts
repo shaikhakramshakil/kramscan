@@ -123,7 +123,7 @@ export class AnalyzeFindingsSkill implements AgentSkill {
     );
 
     try {
-      const aiClient = createAIClient();
+      const aiClient = await createAIClient();
       const prompt = this.buildAnalysisPrompt(scanData, focus);
 
       const response = await aiClient.analyze(prompt);
