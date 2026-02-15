@@ -7,6 +7,26 @@
   "keywords": [
     "security",
     "cli",
+    "scanner",
+    "vulnerability",
+    "pentesting",
+    "web-security",
+    "analysis"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/shaikhakramshakil/kramscan.git"
+  },
+  "bugs": {
+    "url": "https://github.com/shaikhakramshakil/kramscan/issues"
+  },
+  "homepage": "https://github.com/shaikhakramshakil/kramscan#readme",
+  "files": [
+    "dist",
+    "bin",
+    "README.md",
+    "LICENSE"
+  ],
   "engines": {
     "node": ">=18"
   },
