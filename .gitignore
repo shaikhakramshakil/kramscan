@@ -8,7 +8,7 @@ coverage/
 
 # Production
 # dist/ - Uncomment below line if you don't want to track built files
-# dist/
+dist/
 dist-ssr/
 *.local
 
