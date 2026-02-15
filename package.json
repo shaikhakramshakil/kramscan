@@ -1,6 +1,6 @@
 {
   "name": "kramscan",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "KramScan CLI — AI-powered web app security testing",
   "author": "Akram Shaikh <akramshaikh.me>",
   "license": "MIT",
@@ -35,7 +35,7 @@
   },
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
-"scripts": {
+  "scripts": {
     "build": "tsc -p tsconfig.json",
     "dev": "node dist/index.js",
     "start": "node dist/index.js",
