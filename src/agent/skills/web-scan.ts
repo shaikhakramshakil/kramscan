@@ -51,6 +51,32 @@ export class WebScanSkill implements AgentSkill {
         required: false,
         default: true,
       },
+      {
+        name: "maxPages",
+        type: "number",
+        description: "Maximum pages to crawl before stopping",
+        required: false,
+        default: 30,
+      },
+      {
+        name: "maxLinksPerPage",
+        type: "number",
+        description: "Maximum links to follow per page",
+        required: false,
+        default: 50,
+      },
+      {
+        name: "include",
+        type: "array",
+        description: "Only include URLs matching these regex patterns (strings)",
+        required: false,
+      },
+      {
+        name: "exclude",
+        type: "array",
+        description: "Exclude URLs matching these regex patterns (strings)",
+        required: false,
+      },
     ],
   };
 
@@ -92,6 +118,20 @@ export class WebScanSkill implements AgentSkill {
       }
     }
 
+    if (params.maxPages !== undefined) {
+      const maxPages = Number(params.maxPages);
+      if (isNaN(maxPages) || maxPages < 1 || maxPages > 10000) {
+        errors.push("maxPages must be a positive number");
+      }
+    }
+
+    if (params.maxLinksPerPage !== undefined) {
+      const maxLinks = Number(params.maxLinksPerPage);
+      if (isNaN(maxLinks) || maxLinks < 1 || maxLinks > 10000) {
+        errors.push("maxLinksPerPage must be a positive number");
+      }
+    }
+
     return {
       valid: errors.length === 0,
       errors,
@@ -106,6 +146,10 @@ export class WebScanSkill implements AgentSkill {
     const depth = (params.depth as number) ?? 2;
     const timeout = (params.timeout as number) ?? 30000;
     const headless = (params.headless as boolean) ?? true;
+    const maxPages = (params.maxPages as number) ?? 30;
+    const maxLinksPerPage = (params.maxLinksPerPage as number) ?? 50;
+    const include = params.include as string[] | undefined;
+    const exclude = params.exclude as string[] | undefined;
 
     logger.info(`Starting web scan of ${targetUrl}`);
 
@@ -116,6 +160,10 @@ export class WebScanSkill implements AgentSkill {
         depth,
         timeout,
         headless,
+        maxPages,
+        maxLinksPerPage,
+        include,
+        exclude,
       });
 
       // Convert vulnerabilities to findings

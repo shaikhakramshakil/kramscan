@@ -2,7 +2,14 @@ import * as fs from "fs";
 import * as path from "path";
 import * as os from "os";
 
-export type AiProviderName = "openai" | "anthropic" | "gemini" | "openrouter" | "mistral" | "kimi";
+export type AiProviderName =
+  | "openai"
+  | "anthropic"
+  | "gemini"
+  | "openrouter"
+  | "mistral"
+  | "kimi"
+  | "groq";
 export type ReportFormat = "word" | "txt" | "json";
 
 export interface Config {
@@ -276,8 +283,12 @@ class ConfigStore {
     current[keys[keys.length - 1]] = value;
     
     // If setting API key, store it securely
-    if (key === "ai.apiKey" && typeof value === "string" && value) {
-      await this.credentialManager.setPassword("apiKey", value);
+    if (key === "ai.apiKey" && typeof value === "string") {
+      if (value) {
+        await this.credentialManager.setPassword("apiKey", value);
+      } else {
+        await this.credentialManager.deletePassword("apiKey");
+      }
     }
     
     await this.save();
@@ -299,8 +310,12 @@ class ConfigStore {
     Object.assign(this.data, config);
     
     // Save API key securely if present
-    if (config.ai?.apiKey) {
-      await this.credentialManager.setPassword("apiKey", config.ai.apiKey);
+    if (typeof config.ai?.apiKey === "string") {
+      if (config.ai.apiKey) {
+        await this.credentialManager.setPassword("apiKey", config.ai.apiKey);
+      } else {
+        await this.credentialManager.deletePassword("apiKey");
+      }
       this.data.ai.apiKey = config.ai.apiKey;
     }
     

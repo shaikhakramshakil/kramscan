@@ -2,12 +2,9 @@ import { Command } from "commander";
 import chalk from "chalk";
 import { getConfig } from "../core/config";
 import { logger } from "../utils/logger";
-import { exec } from "child_process";
-import { promisify } from "util";
+import * as dns from "dns/promises";
 import fs from "fs/promises";
 import os from "os";
-
-const execAsync = promisify(exec);
 
 interface HealthCheck {
     name: string;
@@ -106,7 +103,7 @@ async function checkNodeVersion(): Promise<HealthCheck> {
 
 async function checkPuppeteer(): Promise<HealthCheck> {
     try {
-        const puppeteer = await import("puppeteer");
+        await import("puppeteer");
         return {
             name: "Puppeteer",
             status: "pass",
@@ -141,6 +138,15 @@ async function checkConfig(): Promise<HealthCheck> {
 async function checkAPIKeys(): Promise<HealthCheck> {
     try {
         const config = await getConfig();
+        const envFallback: Record<string, string | undefined> = {
+            openai: process.env.OPENAI_API_KEY,
+            anthropic: process.env.ANTHROPIC_API_KEY,
+            gemini: process.env.GEMINI_API_KEY,
+            openrouter: process.env.OPENROUTER_API_KEY,
+            mistral: process.env.MISTRAL_API_KEY,
+            kimi: process.env.KIMI_API_KEY,
+            groq: process.env.GROQ_API_KEY,
+        };
 
         if (!config.ai.enabled) {
             return {
@@ -150,7 +156,8 @@ async function checkAPIKeys(): Promise<HealthCheck> {
             };
         }
 
-        if (!config.ai.apiKey) {
+        const apiKey = config.ai.apiKey || envFallback[config.ai.provider] || "";
+        if (!apiKey) {
             return {
                 name: "AI Configuration",
                 status: "warn",
@@ -196,14 +203,13 @@ async function checkDiskSpace(): Promise<HealthCheck> {
 
 async function checkNetwork(): Promise<HealthCheck> {
     try {
-        // Simple DNS check
-        const { exec } = require("child_process");
-        await new Promise((resolve, reject) => {
-            exec("ping -n 1 8.8.8.8", (error: any) => {
-                if (error) reject(error);
-                else resolve(true);
-            });
-        });
+        const timeoutMs = 3000;
+        await Promise.race([
+            dns.lookup("example.com"),
+            new Promise((_, reject) => {
+                setTimeout(() => reject(new Error("DNS lookup timeout")), timeoutMs);
+            }),
+        ]);
 
         return {
             name: "Network Connectivity",

@@ -1,4 +1,4 @@
-<div align="center">
+﻿<div align="center">
   <img src="https://github.com/user-attachments/assets/6439c670-8d73-4bdd-b8fa-c74de949a31e" width="500" alt="KramScan Logo" />
 
   <h3 align="center">AI-Powered Web Application Security Testing CLI</h3>
@@ -14,13 +14,13 @@
 
   <br />
 
-  🔬 **A next-generation security auditing tool that combines automated vulnerability scanning with multi-provider AI analysis.**
+  ðŸ”¬ **A next-generation security auditing tool that combines automated vulnerability scanning with multi-provider AI analysis.**
 
   *Empowering developers and security researchers with institutional-grade insights and an interactive AI agent.*
 
   <br />
 
-  [🌐 NPM Package](https://www.npmjs.com/package/kramscan) · [📖 Documentation](#-usage) · [🐞 Report Bug](https://github.com/shaikhakramshakil/kramscan/issues)
+  [ðŸŒ NPM Package](https://www.npmjs.com/package/kramscan) Â· [ðŸ“– Documentation](#-usage) Â· [ðŸž Report Bug](https://github.com/shaikhakramshakil/kramscan/issues)
 
 </div>
 
@@ -28,10 +28,10 @@
 
 <br />
 
-## 🚀 The Problem We Solve
+## ðŸš€ The Problem We Solve
 Web security is complex and often fragmented. Developers rely on multiple disjointed tools for scanning, manual testing, and reporting. Traditional automated scanners generate noise without context, and manual pentesting is time-consuming and expensive.
 
-**KramScan bridges this gap.** We provide a unified command-line interface that orchestrates headless browser scanning, scrapes critical security headers, and leverages **Generative AI** (OpenAI, Gemini, Anthropic) to analyze findings. It delivers actionable, human-readable insights alongside raw vulnerability data—all in seconds.
+**KramScan bridges this gap.** We provide a unified command-line interface that orchestrates headless browser scanning, scrapes critical security headers, and leverages **Generative AI** (OpenAI, Gemini, Anthropic) to analyze findings. It delivers actionable, human-readable insights alongside raw vulnerability dataâ€”all in seconds.
 
 <br />
 
@@ -39,15 +39,15 @@ Web security is complex and often fragmented. Developers rely on multiple disjoi
 
 <br />
 
-## ✨ Key Features
+## âœ¨ Key Features
 | Feature | Description |
 | :--- | :--- |
-| 🔍 **Automated Vulnerability Engine** | Detects XSS, SQL Injection, CSRF, and insecure headers using Puppeteer-powered crawling. |
-| 🤖 **Interactive AI Agent** | A conversational security assistant that understands natural language commands like "scan example.com". |
-| 🧠 **Multi-Provider AI Analysis** | Supports OpenAI, Anthropic, Google Gemini, Mistral, OpenRouter, and Kimi (Moonshot). |
-| 📄 **Professional Reporting** | Generates detailed DOCX, TXT, and JSON reports with executive summaries and remediation steps. |
-| 🌐 **Headless Browser Testing** | Renders modern SPAs (Single Page Applications) to find vulnerabilities in dynamic content. |
-| ⚡ **CLI-First Architecture** | Optimized for speed, scriptability, and seamless integration into CI/CD pipelines. |
+| ðŸ” **Automated Vulnerability Engine** | Detects XSS, SQL Injection, CSRF, and insecure headers using Puppeteer-powered crawling. |
+| ðŸ¤– **Interactive AI Agent** | A conversational security assistant that understands natural language commands like "scan example.com". |
+| ðŸ§  **Multi-Provider AI Analysis** | Supports OpenAI, Anthropic, Google Gemini, Mistral, OpenRouter, and Kimi (Moonshot). |
+| ðŸ“„ **Professional Reporting** | Generates detailed DOCX, TXT, and JSON reports with executive summaries and remediation steps. |
+| ðŸŒ **Headless Browser Testing** | Renders modern SPAs (Single Page Applications) to find vulnerabilities in dynamic content. |
+| âš¡ **CLI-First Architecture** | Optimized for speed, scriptability, and seamless integration into CI/CD pipelines. |
 
 <br />
 
@@ -55,7 +55,7 @@ Web security is complex and often fragmented. Developers rely on multiple disjoi
 
 <br />
 
-## 🏗️ Architecture & Workflow
+## ðŸ—ï¸ Architecture & Workflow
 
 ```mermaid
 graph LR
@@ -79,12 +79,12 @@ graph LR
 
 <br />
 
-## 🧪 Tech Stack
+## ðŸ§ª Tech Stack
 <div align="center">
 
 | Component | Technology |
 | :--- | :--- |
-| **Runtime** | Node.js ≥ 18 |
+| **Runtime** | Node.js â‰¥ 18 |
 | **Language** | TypeScript 5.4 |
 | **CLI Framework** | Commander.js, Inquirer.js |
 | **Browser Automation** | Puppeteer (Headless Chrome) |
@@ -100,18 +100,35 @@ graph LR
 
 <br />
 
-## 🧠 Supported AI Providers
+## ðŸ§  Supported AI Providers
 
 | Provider | SDK / Integration | Default Model |
 | :--- | :--- | :--- |
 | **OpenAI** | `openai` | `gpt-4` |
 | **Anthropic** | `@anthropic-ai/sdk` | `claude-3-5-sonnet-20241022` |
-| **Google Gemini** | `@google/generative-ai` | `gemini-2.0-flash-exp` |
+| **Google Gemini** | `@google/generative-ai` | `gemini-2.0-flash` |
 | **Mistral** | `@mistralai/mistralai` | `mistral-large-latest` |
 | **OpenRouter** | OpenAI-compatible | `anthropic/claude-3.5-sonnet` |
 | **Kimi** | OpenAI-compatible | `moonshot-v1-8k` |
+| **Groq** | OpenAI-compatible | `llama-3.1-8b-instant` |
 
 > Switch providers instantly with `kramscan onboard` or by editing `~/.kramscan/config.json`.
+
+### API Key Environment Variables
+You can provide API keys via environment variables (useful for CI/CD) instead of saving them locally:
+
+| Provider | Env Var |
+| :--- | :--- |
+| OpenAI | `OPENAI_API_KEY` |
+| Anthropic | `ANTHROPIC_API_KEY` |
+| Gemini | `GEMINI_API_KEY` |
+| Mistral | `MISTRAL_API_KEY` |
+| OpenRouter | `OPENROUTER_API_KEY` |
+| Kimi | `KIMI_API_KEY` |
+| Groq | `GROQ_API_KEY` |
+
+### Model Preflight (Onboarding)
+During `kramscan onboard`, KramScan will try to validate the model you entered against the provider's live model list (best-effort) and warn if the model is invalid.
 
 <br />
 
@@ -119,7 +136,7 @@ graph LR
 
 <br />
 
-## 🚀 Quick Start
+## ðŸš€ Quick Start
 
 ### 1. Installation
 Install KramScan globally using npm:
@@ -148,20 +165,69 @@ kramscan scan https://example.com
 
 <br />
 
-## 📖 Usage & Commands
+## ðŸ“– Usage & Commands
 
 | Command | Description | Status |
 | :--- | :--- | :---: |
-| `kramscan` | Launch the interactive dashboard menu. | ✅ Stable |
-| `kramscan scan <url>` | Run a comprehensive vulnerability scan. | ✅ Stable |
-| `kramscan agent` | Start the conversational AI security assistant. | ✅ Stable |
-| `kramscan analyze` | Analyze previous scan results using the configured AI. | ✅ Stable |
-| `kramscan report` | Generate a professional report from scan data. | ✅ Stable |
-| `kramscan onboard` | Run the configuration and setup wizard. | ✅ Stable |
-| `kramscan doctor` | Verify environment health and dependencies. | ✅ Stable |
-| `kramscan config` | View and edit current configuration settings. | ✅ Stable |
+| `kramscan` | Launch the interactive dashboard menu. | âœ… Stable |
+| `kramscan scan <url>` | Run a comprehensive vulnerability scan. | âœ… Stable |
+| `kramscan agent` | Start the conversational AI security assistant. | âœ… Stable |
+| `kramscan analyze` | Analyze previous scan results using the configured AI. | âœ… Stable |
+| `kramscan report` | Generate a professional report from scan data. | âœ… Stable |
+| `kramscan onboard` | Run the configuration and setup wizard. | âœ… Stable |
+| `kramscan doctor` | Verify environment health and dependencies. | âœ… Stable |
+| `kramscan config` | View and edit current configuration settings. | âœ… Stable |
+| `kramscan scans` | List and inspect recent scans. | ✅ Stable |
+| `kramscan ai` | AI helpers (model listing and connectivity test). | ✅ Stable |
 
 <br />
+
+### Scan Profiles and Limits
+KramScan supports profiles for quick tuning:
+
+```bash
+kramscan scan https://example.com --profile quick
+kramscan scan https://example.com --profile balanced
+kramscan scan https://example.com --profile deep
+```
+
+You can also control crawl limits and URL scope:
+
+```bash
+kramscan scan https://example.com --max-pages 30 --max-links-per-page 50
+kramscan scan https://example.com --exclude "logout|signout"
+kramscan scan https://example.com --include "^https://example\.com/docs"
+```
+
+### Automatic PDF Report After Scan
+After each scan, KramScan automatically generates a PDF report (no separate command required).
+
+The file is saved to:
+
+- JSON: `~/.kramscan/scans/scan-<timestamp>.json`
+- PDF: `~/.kramscan/reports/scanreport_<hostname>_<timestamp>.pdf`
+
+You can disable it with:
+
+```bash
+kramscan scan https://example.com --no-pdf
+```
+
+### Scan History
+Every scan is indexed in `~/.kramscan/scans/index.json`.
+
+```bash
+kramscan scans list -n 10
+kramscan scans latest
+```
+
+### AI Diagnostics
+List models and test your configured provider/model:
+
+```bash
+kramscan ai models -n 10
+kramscan ai test
+```
 
 ### Example Agent Session
 ```bash
@@ -182,7 +248,7 @@ Agent: Scan complete! Found 2 High severity issues.
 
 <br />
 
-## 🗺️ Roadmap
+## ðŸ—ºï¸ Roadmap
 
 - [x] Core vulnerability scanner (XSS, SQLi, CSRF, headers)
 - [x] Multi-provider AI analysis engine
@@ -200,7 +266,7 @@ Agent: Scan complete! Found 2 High severity issues.
 
 <br />
 
-## 🔒 Security & Privacy
+## ðŸ”’ Security & Privacy
 - **Local Execution:** All scanning logic runs locally on your machine.
 - **API Key Safety:** AI provider API keys are stored securely in your local home directory and are never sent to our servers.
 - **Data Privacy:** Scan data is sent only to your chosen AI provider for analysis and is not stored by KramScan.
@@ -211,7 +277,7 @@ Agent: Scan complete! Found 2 High severity issues.
 
 <br />
 
-## 👤 Author
+## ðŸ‘¤ Author
 <div align="center">
 
 **Akram Shaikh**
@@ -228,9 +294,10 @@ Agent: Scan complete! Found 2 High severity issues.
 
 <br />
 
-## 📄 License
-This project is licensed under the **MIT License** — see the [LICENSE](LICENSE) file for details.
+## ðŸ“„ License
+This project is licensed under the **MIT License** â€” see the [LICENSE](LICENSE) file for details.
 
 <div align="center">
-  <sub>Made with ❤️ by Akram Shaikh</sub>
+  <sub>Made with â¤ï¸ by Akram Shaikh</sub>
 </div>
+

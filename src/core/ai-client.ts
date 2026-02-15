@@ -25,6 +25,7 @@ function getApiKeyFromEnv(provider: string): string {
     mistral: process.env.MISTRAL_API_KEY || "",
     openrouter: process.env.OPENROUTER_API_KEY || "",
     kimi: process.env.KIMI_API_KEY || "",
+    groq: process.env.GROQ_API_KEY || "",
   };
   return envVars[provider] || "";
 }
@@ -59,6 +60,8 @@ export async function createAIClient(): Promise<AIClient> {
             return new MistralClient(apiKey, model);
         case "kimi":
             return new KimiClient(apiKey, model);
+        case "groq":
+            return new GroqClient(apiKey, model);
         default:
             throw new Error(`Unsupported AI provider: ${provider}`);
     }
@@ -248,6 +251,43 @@ class KimiClient implements AIClient {
         this.client = new OpenAI({
             apiKey,
             baseURL: "https://api.moonshot.cn/v1",
+        });
+        this.model = model;
+    }
+
+    async analyze(prompt: string): Promise<AIResponse> {
+        const response = await this.client.chat.completions.create({
+            model: this.model,
+            messages: [
+                {
+                    role: "system",
+                    content: "You are a security expert analyzing web application vulnerabilities. Provide detailed, actionable insights.",
+                },
+                { role: "user", content: prompt },
+            ],
+            temperature: 0.3,
+        });
+
+        const content = response.choices[0]?.message?.content || "";
+        return {
+            content,
+            usage: {
+                promptTokens: response.usage?.prompt_tokens || 0,
+                completionTokens: response.usage?.completion_tokens || 0,
+                totalTokens: response.usage?.total_tokens || 0,
+            },
+        };
+    }
+}
+
+class GroqClient implements AIClient {
+    private client: OpenAI;
+    private model: string;
+
+    constructor(apiKey: string, model: string) {
+        this.client = new OpenAI({
+            apiKey,
+            baseURL: "https://api.groq.com/openai/v1",
         });
         this.model = model;
     }

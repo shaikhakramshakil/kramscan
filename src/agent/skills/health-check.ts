@@ -152,6 +152,16 @@ export class HealthCheckSkill implements AgentSkill {
   private async checkConfiguration(): Promise<HealthCheck> {
     try {
       const config = await getConfig();
+      const envFallback: Record<string, string | undefined> = {
+        openai: process.env.OPENAI_API_KEY,
+        anthropic: process.env.ANTHROPIC_API_KEY,
+        gemini: process.env.GEMINI_API_KEY,
+        openrouter: process.env.OPENROUTER_API_KEY,
+        mistral: process.env.MISTRAL_API_KEY,
+        kimi: process.env.KIMI_API_KEY,
+        groq: process.env.GROQ_API_KEY,
+      };
+      const apiKey = config.ai.apiKey || envFallback[config.ai.provider] || "";
 
       if (!config.ai.enabled) {
         return {
@@ -162,7 +172,7 @@ export class HealthCheckSkill implements AgentSkill {
         };
       }
 
-      if (!config.ai.apiKey) {
+      if (!apiKey) {
         return {
           name: "Configuration",
           status: "error",
@@ -188,8 +198,18 @@ export class HealthCheckSkill implements AgentSkill {
 
   private async checkAIProvider(): Promise<HealthCheck> {
     const config = await getConfig();
+    const envFallback: Record<string, string | undefined> = {
+      openai: process.env.OPENAI_API_KEY,
+      anthropic: process.env.ANTHROPIC_API_KEY,
+      gemini: process.env.GEMINI_API_KEY,
+      openrouter: process.env.OPENROUTER_API_KEY,
+      mistral: process.env.MISTRAL_API_KEY,
+      kimi: process.env.KIMI_API_KEY,
+      groq: process.env.GROQ_API_KEY,
+    };
+    const apiKey = config.ai.apiKey || envFallback[config.ai.provider] || "";
 
-    if (!config.ai.enabled || !config.ai.apiKey) {
+    if (!config.ai.enabled || !apiKey) {
       return {
         name: "AI Provider",
         status: "warning",

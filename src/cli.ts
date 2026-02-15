@@ -6,6 +6,8 @@ import { registerReportCommand } from "./commands/report";
 import { registerConfigCommand } from "./commands/config";
 import { registerDoctorCommand } from "./commands/doctor";
 import { registerAgentCommand } from "./commands/agent";
+import { registerScansCommand } from "./commands/scans";
+import { registerAiCommand } from "./commands/ai";
 import { isDebugEnabled } from "./core/config";
 
 const CLI_VERSION = "0.1.0";
@@ -113,17 +115,15 @@ async function showInteractiveMenu(): Promise<void> {
   printBanner();
   printInfo();
 
-  // Use readline for a simple, CommonJS-compatible interactive menu
-  const readline = await import("readline");
-  const rl = readline.createInterface({
-    input: process.stdin,
-    output: process.stdout,
-  });
+  const menuRenderLines = menuChoices.length + 6;
 
-  function renderMenu(selectedIndex: number): void {
-    // Move cursor up to redraw the menu (clear previous render)
-    if (selectedIndex >= 0) {
-      process.stdout.write(`\x1b[${menuChoices.length + 2}A`);
+  function renderMenu(
+    selectedIndex: number,
+    typedInput: string,
+    initialRender = false
+  ): void {
+    if (!initialRender) {
+      process.stdout.write(`\x1b[${menuRenderLines}A`);
     }
 
     console.log(`  ${c.brightWhite}${c.bold}What would you like to do?${c.reset}`);
@@ -137,55 +137,92 @@ async function showInteractiveMenu(): Promise<void> {
 
       if (isSelected) {
         console.log(
-          `  ${c.brightCyan}${c.bold}❯ ${choice.icon}  ${choice.label}${c.reset}${statusTag}  ${c.dim}${c.gray}— ${choice.description}${c.reset}`
+          `  ${c.brightCyan}${c.bold}> ${choice.icon}  ${choice.label}${c.reset}${statusTag}  ${c.dim}${c.gray}- ${choice.description}${c.reset}`
         );
       } else {
         console.log(
-          `    ${choice.icon}  ${c.white}${choice.label}${c.reset}${statusTag}  ${c.dim}${c.gray}— ${choice.description}${c.reset}`
+          `    ${choice.icon}  ${c.white}${choice.label}${c.reset}${statusTag}  ${c.dim}${c.gray}- ${choice.description}${c.reset}`
         );
       }
     });
+
+    console.log("");
+    console.log(
+      `  ${c.gray}Type a command directly (example: ${c.cyan}scan https://example.com${c.gray}) or use arrows + Enter.${c.reset}`
+    );
+    console.log(`  ${c.brightWhite}>${c.reset} ${c.cyan}${typedInput}${c.reset}`);
+    console.log("");
+  }
+
+  function parseDirectCommand(input: string): string[] {
+    const tokens =
+      input.match(/(?:[^\s"]+|"[^"]*")+/g)?.map((token) => token.replace(/^"(.*)"$/, "$1")) ?? [];
+
+    if (tokens[0]?.toLowerCase() === "kramscan") {
+      return tokens.slice(1);
+    }
+
+    return tokens;
   }
 
   return new Promise<void>((resolve) => {
     let selectedIndex = 0;
+    let typedInput = "";
     let inputHandler: ((key: Buffer) => void) | null = null;
+    let cleanedUp = false;
 
-    // Enable raw mode for arrow key support
+    const cleanup = (): void => {
+      if (cleanedUp) {
+        return;
+      }
+      cleanedUp = true;
+
+      if (process.stdin.isTTY) {
+        process.stdin.setRawMode(false);
+      }
+      if (inputHandler) {
+        process.stdin.removeListener("data", inputHandler);
+      }
+      process.stdin.pause();
+    };
+
     if (process.stdin.isTTY) {
       process.stdin.setRawMode(true);
     }
     process.stdin.resume();
-
-    renderMenu(-1); // Initial render (no cursor-up needed)
+    renderMenu(selectedIndex, typedInput, true);
 
     inputHandler = async (key: Buffer) => {
       const str = key.toString();
 
       if (str === "\x1b[A") {
-        // Arrow Up
         selectedIndex = (selectedIndex - 1 + menuChoices.length) % menuChoices.length;
-        renderMenu(selectedIndex);
+        renderMenu(selectedIndex, typedInput);
       } else if (str === "\x1b[B") {
-        // Arrow Down
         selectedIndex = (selectedIndex + 1) % menuChoices.length;
-        renderMenu(selectedIndex);
+        renderMenu(selectedIndex, typedInput);
+      } else if (str === "\x7f" || str === "\b") {
+        if (typedInput.length > 0) {
+          typedInput = typedInput.slice(0, -1);
+          renderMenu(selectedIndex, typedInput);
+        }
       } else if (str === "\r" || str === "\n") {
-        // Enter
-        if (process.stdin.isTTY) {
-          process.stdin.setRawMode(false);
+        cleanup();
+
+        const directArgs = parseDirectCommand(typedInput.trim());
+        if (directArgs.length > 0) {
+          console.log("");
+          const program = createProgram();
+          await program.parseAsync(["node", "kramscan", ...directArgs]);
+          resolve();
+          return;
         }
-        process.stdin.pause();
-        if (inputHandler) {
-          process.stdin.removeListener("data", inputHandler);
-        }
-        rl.close();
 
         const selected = menuChoices[selectedIndex];
         console.log("");
 
         if (selected.value === "exit") {
-          console.log(`  ${c.gray}${c.dim}Goodbye! 👋${c.reset}`);
+          console.log(`  ${c.gray}${c.dim}Goodbye!${c.reset}`);
           console.log("");
           resolve();
           return;
@@ -193,7 +230,7 @@ async function showInteractiveMenu(): Promise<void> {
 
         if (selected.status === "coming_soon") {
           console.log(
-            `  ${c.yellow}⚠  ${selected.label}${c.reset} ${c.gray}is coming soon. Stay tuned!${c.reset}`
+            `  ${c.yellow}[!]  ${selected.label}${c.reset} ${c.gray}is coming soon. Stay tuned!${c.reset}`
           );
           console.log(`  ${c.gray}Run ${c.cyan}kramscan --help${c.gray} for available commands.${c.reset}`);
           console.log("");
@@ -201,29 +238,21 @@ async function showInteractiveMenu(): Promise<void> {
           return;
         }
 
-        // Execute the selected command
         console.log(
-          `  ${c.brightGreen}▶${c.reset} ${c.bold}Launching ${selected.label}...${c.reset}`
+          `  ${c.brightGreen}>${c.reset} ${c.bold}Launching ${selected.label}...${c.reset}`
         );
         console.log("");
 
-        // Re-run with the command argument
-        process.argv.push(selected.value);
         const program = createProgram();
-        await program.parseAsync(process.argv);
+        await program.parseAsync(["node", "kramscan", selected.value]);
         resolve();
       } else if (str === "\x03") {
-        // Ctrl+C
-        if (process.stdin.isTTY) {
-          process.stdin.setRawMode(false);
-        }
-        process.stdin.pause();
-        if (inputHandler) {
-          process.stdin.removeListener("data", inputHandler);
-        }
-        rl.close();
-        console.log(`\n  ${c.gray}${c.dim}Interrupted. Goodbye! 👋${c.reset}\n`);
+        cleanup();
+        console.log(`\n  ${c.gray}${c.dim}Interrupted. Goodbye!${c.reset}\n`);
         process.exit(0);
+      } else if (/^[\x20-\x7e]$/.test(str)) {
+        typedInput += str;
+        renderMenu(selectedIndex, typedInput);
       }
     };
 
@@ -255,6 +284,8 @@ function createProgram(): Command {
   registerConfigCommand(program);
   registerDoctorCommand(program);
   registerAgentCommand(program);
+  registerScansCommand(program);
+  registerAiCommand(program);
 
   return program;
 }

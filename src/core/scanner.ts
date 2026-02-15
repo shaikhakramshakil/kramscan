@@ -7,6 +7,11 @@ export interface ScanOptions {
   depth?: number;
   timeout?: number;
   headless?: boolean;
+  maxPages?: number;
+  maxLinksPerPage?: number;
+  include?: string[];
+  exclude?: string[];
+  strictScope?: boolean;
 }
 
 interface RateLimiter {
@@ -30,6 +35,14 @@ export class Scanner {
   private headersChecked: Set<string> = new Set();
   private rateLimiter: RateLimiter;
   private retryConfig: RetryConfig;
+  private maxConcurrency = 5;
+  private strictScope = true;
+  private baseOrigin: string | null = null;
+  private maxPages = 30;
+  private maxLinksPerPage = 50;
+  private includePatterns: RegExp[] = [];
+  private excludePatterns: RegExp[] = [];
+  private userAgent = "KramScan/0.1.0";
 
   constructor() {
     this.detector = new VulnerabilityDetector();
@@ -44,9 +57,41 @@ export class Scanner {
     };
   }
 
-  private async initializeRateLimiter(): Promise<void> {
+  private async initializeScanSettings(targetUrl: string, options: ScanOptions): Promise<void> {
     const config = await getConfig();
     this.rateLimiter.minInterval = 1000 / (config.scan.rateLimitPerSecond || 5);
+    this.maxConcurrency = Math.max(1, config.scan.maxThreads || 5);
+    this.strictScope = options.strictScope ?? (config.scan.strictScope ?? true);
+    this.baseOrigin = new URL(targetUrl).origin;
+    this.maxPages = Math.max(1, options.maxPages ?? 30);
+    this.maxLinksPerPage = Math.max(1, options.maxLinksPerPage ?? 50);
+    this.userAgent = config.scan.userAgent || this.userAgent;
+
+    const compileList = (values?: string[]): RegExp[] => {
+      if (!values || values.length === 0) return [];
+      const patterns: RegExp[] = [];
+      for (const raw of values) {
+        try {
+          patterns.push(new RegExp(raw));
+        } catch {
+          logger.warn(`Invalid regex pattern ignored: ${raw}`);
+        }
+      }
+      return patterns;
+    };
+
+    this.includePatterns = compileList(options.include);
+    this.excludePatterns = compileList(options.exclude);
+  }
+
+  private resetScanState(): void {
+    this.detector.clear();
+    this.visitedUrls.clear();
+    this.crawledUrls = 0;
+    this.testedForms = 0;
+    this.requestsMade = 0;
+    this.headersChecked.clear();
+    this.rateLimiter.lastRequestTime = 0;
   }
 
   async initialize(options: ScanOptions = {}): Promise<void> {
@@ -70,7 +115,8 @@ export class Scanner {
     const depth = options.depth ?? 2;
     const timeout = options.timeout ?? 30000;
 
-    await this.initializeRateLimiter();
+    this.resetScanState();
+    await this.initializeScanSettings(targetUrl, options);
 
     if (!this.browser) {
       await this.initialize(options);
@@ -155,7 +201,38 @@ export class Scanner {
     return payload;
   }
 
+  private async createInstrumentedPage(): Promise<Page> {
+    const page = await this.browser!.newPage();
+    await page.setUserAgent(this.userAgent);
+    await page.setRequestInterception(true);
+    page.on("request", (request) => {
+      this.requestsMade++;
+      const resourceType = request.resourceType();
+      if (resourceType === "image" || resourceType === "font" || resourceType === "media") {
+        request.abort();
+        return;
+      }
+      request.continue();
+    });
+    return page;
+  }
+
+  private async runInIsolatedPage(
+    operation: (page: Page) => Promise<void>
+  ): Promise<void> {
+    const page = await this.createInstrumentedPage();
+    try {
+      await operation(page);
+    } finally {
+      await page.close().catch((err) => logger.debug(`Error closing page: ${err.message}`));
+    }
+  }
+
   private async crawl(url: string, depth: number, timeout: number): Promise<void> {
+    if (this.crawledUrls >= this.maxPages) {
+      return;
+    }
+
     if (depth === 0 || this.visitedUrls.has(url)) {
       return;
     }
@@ -163,15 +240,9 @@ export class Scanner {
     this.visitedUrls.add(url);
     this.crawledUrls++;
 
-    const page = await this.browser!.newPage();
+    const page = await this.createInstrumentedPage();
 
     try {
-      await page.setRequestInterception(true);
-      page.on("request", (request) => {
-        this.requestsMade++;
-        request.continue();
-      });
-
       const response = await this.withRetry(
         () => page.goto(url, { waitUntil: "networkidle2", timeout }),
         `crawl ${url}`
@@ -199,7 +270,7 @@ export class Scanner {
 
       if (depth > 1) {
         const links = await this.extractLinks(page, url);
-        for (const link of links.slice(0, 10)) {
+        for (const link of links) {
           await this.crawl(link, depth - 1, timeout);
         }
       }
@@ -212,8 +283,6 @@ export class Scanner {
 
   private async testForms(page: Page, url: string, timeout: number): Promise<void> {
     const forms = await page.$$("form");
-    const config = await getConfig();
-    const maxConcurrency = config.scan.maxThreads || 5;
 
     for (const form of forms) {
       this.testedForms++;
@@ -233,14 +302,30 @@ export class Scanner {
             continue;
           }
 
-          inputTests.push(() => this.testXSS(page, url, name, timeout));
-          inputTests.push(() => this.testSQLi(page, url, name, timeout));
-          inputTests.push(() => this.testLFI(page, url, name, timeout));
-          inputTests.push(() => this.testCMDI(page, url, name, timeout));
+          inputTests.push(() =>
+            this.runInIsolatedPage((testPage) =>
+              this.testXSS(testPage, url, name, timeout)
+            )
+          );
+          inputTests.push(() =>
+            this.runInIsolatedPage((testPage) =>
+              this.testSQLi(testPage, url, name, timeout)
+            )
+          );
+          inputTests.push(() =>
+            this.runInIsolatedPage((testPage) =>
+              this.testLFI(testPage, url, name, timeout)
+            )
+          );
+          inputTests.push(() =>
+            this.runInIsolatedPage((testPage) =>
+              this.testCMDI(testPage, url, name, timeout)
+            )
+          );
         }
 
         // Execute tests with concurrency control
-        await this.runWithConcurrency(inputTests, maxConcurrency);
+        await this.runWithConcurrency(inputTests, this.maxConcurrency);
       } catch (error) {
         logger.debug(`Error testing form: ${(error as Error).message}`);
       }
@@ -251,23 +336,25 @@ export class Scanner {
     tasks: Array<() => Promise<T>>,
     maxConcurrency: number
   ): Promise<void> {
-    const executing: Promise<T | undefined>[] = [];
-
-    for (const task of tasks) {
-      const promise = task().catch((error): undefined => {
-        logger.debug(`Task failed: ${(error as Error).message}`);
-        return undefined;
-      });
-
-      executing.push(promise);
-
-      if (executing.length >= maxConcurrency) {
-        await Promise.race(executing);
-        executing.splice(executing.findIndex(p => p === promise), 1);
-      }
+    if (tasks.length === 0) {
+      return;
     }
 
-    await Promise.all(executing);
+    const workerCount = Math.max(1, Math.min(maxConcurrency, tasks.length));
+    let nextIndex = 0;
+
+    const workers = Array.from({ length: workerCount }, async () => {
+      while (nextIndex < tasks.length) {
+        const currentTask = tasks[nextIndex++];
+        try {
+          await currentTask();
+        } catch (error) {
+          logger.debug(`Task failed: ${(error as Error).message}`);
+        }
+      }
+    });
+
+    await Promise.all(workers);
   }
 
   private async testUrlParameters(page: Page, baseUrl: string, timeout: number): Promise<void> {
@@ -276,7 +363,7 @@ export class Scanner {
       const params = Array.from(url.searchParams.keys());
 
       for (const param of params) {
-        await this.testIDOR(baseUrl, param, timeout);
+        await this.testIDOR(page, baseUrl, param, timeout);
         await this.testLFI(page, baseUrl, param, timeout);
         await this.testPathTraversal(page, baseUrl, param, timeout);
         await this.testCMDI(page, baseUrl, param, timeout);
@@ -331,10 +418,16 @@ export class Scanner {
       "'; WAITFOR DELAY '00:00:05'--",
     ];
 
+    let baselineTime = 0;
     try {
-      await page.content();
+      const baselineStart = Date.now();
+      await this.withRetry(
+        () => page.goto(url, { waitUntil: "networkidle2", timeout }),
+        `SQLi baseline for ${param}`
+      );
+      baselineTime = Date.now() - baselineStart;
     } catch (error) {
-      logger.debug(`Could not get original response for SQLi test: ${(error as Error).message}`);
+      logger.debug(`Could not collect baseline response for SQLi test: ${(error as Error).message}`);
       return;
     }
 
@@ -355,11 +448,11 @@ export class Scanner {
       }
     }
 
-    const startTime = Date.now();
     for (const payload of timeBasedPayloads) {
       try {
         const sanitizedPayload = this.sanitizePayload(payload);
         const testUrl = this.buildTestUrl(url, param, sanitizedPayload);
+        const startTime = Date.now();
         
         await this.withRetry(
           () => page.goto(testUrl, { waitUntil: "networkidle2", timeout }),
@@ -367,7 +460,7 @@ export class Scanner {
         );
         
         const testTime = Date.now() - startTime;
-        this.detector.detectBlindSQLi(url, param, 0, testTime);
+        this.detector.detectBlindSQLi(url, param, baselineTime, testTime);
       } catch (error) {
         logger.debug(`Blind SQLi test failed for ${param}: ${(error as Error).message}`);
       }
@@ -522,9 +615,7 @@ export class Scanner {
     }
   }
 
-  private async testIDOR(baseUrl: string, param: string, timeout: number): Promise<void> {
-    const page = await this.browser!.newPage();
-    
+  private async testIDOR(page: Page, baseUrl: string, param: string, timeout: number): Promise<void> {
     try {
       const url = new URL(baseUrl);
       const originalValue = url.searchParams.get(param);
@@ -552,8 +643,6 @@ export class Scanner {
       this.detector.detectIDOR(baseUrl, param, originalValue, testContent, originalContent);
     } catch (error) {
       logger.debug(`IDOR test failed for ${param}: ${(error as Error).message}`);
-    } finally {
-      await page.close().catch(err => logger.debug(`Error closing page: ${err.message}`));
     }
   }
 
@@ -573,21 +662,49 @@ export class Scanner {
     );
 
     const absoluteLinks: string[] = [];
+    const baseOrigin = this.baseOrigin || new URL(baseUrl).origin;
+
+    const isAllowedByPatterns = (candidate: URL): boolean => {
+      const asString = candidate.toString();
+      for (const pattern of this.excludePatterns) {
+        if (pattern.test(asString)) {
+          return false;
+        }
+      }
+
+      if (this.includePatterns.length > 0) {
+        return this.includePatterns.some((pattern) => pattern.test(asString));
+      }
+
+      return true;
+    };
 
     for (const link of links) {
       if (!link) continue;
 
       try {
         const absolute = new URL(link, baseUrl);
-        if (absolute.origin === new URL(baseUrl).origin) {
-          absoluteLinks.push(absolute.toString());
+        if (!["http:", "https:"].includes(absolute.protocol)) {
+          continue;
         }
+
+        if (this.strictScope && absolute.origin !== baseOrigin) {
+          continue;
+        }
+
+        if (!isAllowedByPatterns(absolute)) {
+          continue;
+        }
+
+        absolute.hash = "";
+        absoluteLinks.push(absolute.toString());
       } catch {
         // Skip invalid URLs
       }
     }
 
-    return [...new Set(absoluteLinks)];
+    const deduped = [...new Set(absoluteLinks)];
+    return deduped.slice(0, this.maxLinksPerPage);
   }
 
   async close(): Promise<void> {
