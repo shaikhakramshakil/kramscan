@@ -12,8 +12,8 @@ export function registerConfigCommand(program: Command): void {
     configCmd
         .command("get <key>")
         .description("Get a configuration value")
-        .action((key: string) => {
-            const config = getConfig();
+        .action(async (key: string) => {
+            const config = await getConfig();
             const value = getNestedValue(config, key);
 
             if (value === undefined) {
@@ -27,8 +27,8 @@ export function registerConfigCommand(program: Command): void {
     configCmd
         .command("set <key> <value>")
         .description("Set a configuration value")
-        .action((key: string, value: string) => {
-            const config = getConfig();
+        .action(async (key: string, value: string) => {
+            const config = await getConfig();
 
             // Parse value
             let parsedValue: any = value;
@@ -37,7 +37,7 @@ export function registerConfigCommand(program: Command): void {
             else if (!isNaN(Number(value))) parsedValue = Number(value);
 
             setNestedValue(config, key, parsedValue);
-            setConfig(config);
+            await setConfig(config);
 
             logger.success(`Set ${chalk.cyan(key)} = ${chalk.white(JSON.stringify(parsedValue))}`);
         });
@@ -45,8 +45,8 @@ export function registerConfigCommand(program: Command): void {
     configCmd
         .command("list")
         .description("List all configuration")
-        .action(() => {
-            const config = getConfig();
+        .action(async () => {
+            const config = await getConfig();
             console.log("");
             console.log(chalk.bold.cyan("📋 Current Configuration"));
             console.log(chalk.gray("─".repeat(50)));
@@ -59,7 +59,7 @@ export function registerConfigCommand(program: Command): void {
         .command("edit")
         .description("Interactively edit configuration")
         .action(async () => {
-            const config = getConfig();
+            const config = await getConfig();
 
             console.log("");
             console.log(chalk.bold.cyan("⚙️  Configuration Editor"));

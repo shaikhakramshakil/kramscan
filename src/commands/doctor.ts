@@ -123,7 +123,7 @@ async function checkPuppeteer(): Promise<HealthCheck> {
 
 async function checkConfig(): Promise<HealthCheck> {
     try {
-        const config = getConfig();
+        const config = await getConfig();
         return {
             name: "Configuration",
             status: "pass",
@@ -140,7 +140,7 @@ async function checkConfig(): Promise<HealthCheck> {
 
 async function checkAPIKeys(): Promise<HealthCheck> {
     try {
-        const config = getConfig();
+        const config = await getConfig();
 
         if (!config.ai.enabled) {
             return {

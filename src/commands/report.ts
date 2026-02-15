@@ -48,7 +48,7 @@ export function registerReportCommand(program: Command): void {
                 const scanResult: ScanResult = JSON.parse(content);
 
                 // Determine format
-                const config = getConfig();
+                const config = await getConfig();
                 const format = options.format || config.report.defaultFormat;
 
                 const spinner = logger.spinner(`Generating ${format.toUpperCase()} report...`);
