@@ -67,87 +67,77 @@ export function registerAgentCommand(program: Command): void {
 async function runInteractiveMode(
   orchestrator: AgentOrchestrator
 ): Promise<void> {
+  // Ensure we aren't in raw mode from other interactive flows.
+  if (process.stdin.isTTY) {
+    try {
+      process.stdin.setRawMode(false);
+    } catch {
+      // ignore
+    }
+  }
+
   const rl = readline.createInterface({
     input: process.stdin,
     output: process.stdout,
-    prompt: chalk.gray("You: "),
   });
 
-  // Print welcome banner
   printWelcomeBanner();
-
-  // Show available skills
   printAvailableSkills(orchestrator);
 
+  // Share this readline interface with confirmations to avoid double-reading stdin.
+  orchestrator.setReadlineInterface(rl);
   orchestrator.start();
 
   console.log(chalk.gray("Type 'help' for commands or 'exit' to quit.\n"));
 
-  // Main interaction loop
-  const askQuestion = () => {
-    rl.prompt();
-  };
+  let closed = false;
+  rl.on('SIGINT', () => rl.close());
+  rl.on('close', () => { closed = true; });
 
-  rl.on("line", async (input: string) => {
+  const question = (prompt: string): Promise<string> =>
+    new Promise((resolve) => rl.question(prompt, resolve));
+
+  while (!closed) {
+    const input = await question(chalk.gray('You: '));
+    if (closed) break;
+
     const trimmed = input.trim();
+    if (!trimmed) continue;
 
-    if (!trimmed) {
-      askQuestion();
-      return;
-    }
-
-    // Handle special commands
     const commandResult = await handleSpecialCommand(trimmed, orchestrator, rl);
     if (commandResult.handled) {
-      if (commandResult.shouldExit) {
-        return;
-      }
-      askQuestion();
-      return;
+      if (commandResult.shouldExit) break;
+      continue;
     }
 
-    // Process as regular message
-    console.log("");
+    console.log('');
 
     try {
       const response = await orchestrator.processUserMessage(trimmed);
 
-      // Print agent response
-      console.log(chalk.bold.cyan("Agent:"));
+      console.log(chalk.bold.cyan('Agent:'));
       console.log(response.message);
 
-      // Show tool execution summary if applicable
       if (response.toolCalls && response.toolCalls.length > 0) {
-        console.log("");
-        console.log(chalk.gray("Tools executed:"));
+        console.log('');
+        console.log(chalk.gray('Tools executed:'));
         response.toolCalls.forEach((call) => {
-          const result = response.toolCallResults?.find(
-            (r) => r.toolCallId === call.id
-          );
-          const icon = result?.success ? chalk.green("✓") : chalk.red("✗");
-          console.log(chalk.gray(`  ${icon} ${call.name}`));
+          const result = response.toolCallResults?.find((r) => r.toolCallId === call.id);
+          const icon = result?.success ? chalk.green('OK') : chalk.red('X');
+          console.log(chalk.gray('  ' + icon + ' ' + call.name));
         });
       }
 
-      console.log("");
+      console.log('');
     } catch (error) {
-      console.log(
-        chalk.red("Error:"),
-        error instanceof Error ? error.message : String(error)
-      );
-      console.log("");
+      console.log(chalk.red('Error:'), error instanceof Error ? error.message : String(error));
+      console.log('');
     }
+  }
 
-    askQuestion();
-  });
-
-  rl.on("close", async () => {
-    console.log(chalk.gray("\nGoodbye! 👋\n"));
-    await orchestrator.shutdown();
-    process.exit(0);
-  });
-
-  askQuestion();
+  console.log(chalk.gray('\nGoodbye!\n'));
+  await orchestrator.shutdown();
+  rl.close();
 }
 
 async function handleSpecialCommand(

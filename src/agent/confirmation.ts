@@ -14,13 +14,31 @@ export interface ConfirmationResult {
 }
 
 export class ConfirmationHandler {
-  private rl: readline.Interface;
+  private rl: readline.Interface | null = null;
+  private ownsRl = false;
 
-  constructor() {
-    this.rl = readline.createInterface({
-      input: process.stdin,
-      output: process.stdout,
-    });
+  constructor(rl?: readline.Interface) {
+    if (rl) {
+      this.rl = rl;
+      this.ownsRl = false;
+    }
+  }
+
+  setInterface(rl: readline.Interface): void {
+    // Prefer sharing a single readline interface to avoid double-reading stdin.
+    this.rl = rl;
+    this.ownsRl = false;
+  }
+
+  private getInterface(): readline.Interface {
+    if (!this.rl) {
+      this.rl = readline.createInterface({
+        input: process.stdin,
+        output: process.stdout,
+      });
+      this.ownsRl = true;
+    }
+    return this.rl;
   }
 
   /**
@@ -75,8 +93,9 @@ export class ConfirmationHandler {
    * Quick confirmation for low-risk actions
    */
   async quickConfirm(action: string): Promise<boolean> {
+    const rl = this.getInterface();
     return new Promise((resolve) => {
-      this.rl.question(
+      rl.question(
         chalk.gray(`${action} [Y/n]: `),
         (answer: string) => {
           const normalized = answer.trim().toLowerCase();
@@ -116,13 +135,16 @@ export class ConfirmationHandler {
    * Close the readline interface
    */
   close(): void {
-    this.rl.close();
+    if (this.rl && this.ownsRl) {
+      this.rl.close();
+    }
   }
 
   private async getUserInput(): Promise<ConfirmationResult> {
+    const rl = this.getInterface();
     return new Promise((resolve) => {
       const askQuestion = () => {
-        this.rl.question(
+        rl.question(
           chalk.gray("Proceed? [Y/n/details/cancel]: "),
           (answer: string) => {
             const normalized = answer.trim().toLowerCase();

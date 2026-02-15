@@ -216,11 +216,10 @@ export class ConversationContext {
    * Format messages for AI provider (OpenAI/Anthropic format)
    */
   formatForAI(): Array<{ role: string; content: string }> {
-    return this.messages
-      .filter((m) => m.role !== "system")
-      .map((m) => ({
-        role: m.role,
-        content: m.content,
-      }));
+    // Include system messages so the model receives core constraints and tool format instructions.
+    return this.messages.map((m) => ({
+      role: m.role,
+      content: m.content,
+    }));
   }
 }

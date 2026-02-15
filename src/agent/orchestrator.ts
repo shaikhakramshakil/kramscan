@@ -17,6 +17,7 @@ import {
 import { createAIClient, AIClient } from "../core/ai-client";
 import { logger } from "../utils/logger";
 import chalk from "chalk";
+import type * as readline from "readline";
 
 export class AgentOrchestrator {
   private context: ConversationContext;
@@ -34,6 +35,10 @@ export class AgentOrchestrator {
     this.config = { ...DEFAULT_AGENT_CONFIG, ...config };
     this.context = new ConversationContext(this.config);
     this.confirmationHandler = new ConfirmationHandler();
+  }
+
+  setReadlineInterface(rl: readline.Interface): void {
+    this.confirmationHandler.setInterface(rl);
   }
 
   /**
@@ -293,6 +298,34 @@ If you don't need a tool, just respond naturally.`;
       }
     }
 
+    // Fallback: some models respond with <web_scan> { ...args } </web_scan> blocks.
+    // Accept any <toolName>{json}</toolName> where json is either {arguments} or {name, arguments}.
+    if (toolCalls.length === 0) {
+      const alt = /<([a-zA-Z0-9_]+)>\s*([\s\S]*?)\s*<\/\1>/g;
+      let m: RegExpExecArray | null;
+      while ((m = alt.exec(response)) !== null) {
+        const tag = m[1];
+        if (tag === "tool_call") continue;
+        try {
+          const parsed = JSON.parse(m[2]);
+          const name =
+            typeof parsed?.name === "string" ? parsed.name : tag;
+          const args =
+            parsed && typeof parsed === "object" && "arguments" in parsed
+              ? (parsed.arguments as Record<string, unknown>)
+              : (parsed as Record<string, unknown>);
+
+          toolCalls.push({
+            id: `tool-${Date.now()}-${toolCalls.length}`,
+            name,
+            arguments: args || {},
+          });
+        } catch {
+          // Ignore non-json blocks.
+        }
+      }
+    }
+
     return toolCalls;
   }
 
@@ -301,7 +334,20 @@ If you don't need a tool, just respond naturally.`;
     aiMessage: string
   ): Promise<AgentResponse> {
     // Extract message without tool calls
-    const cleanMessage = aiMessage.replace(/<tool_call>[\s\S]*?<\/tool_call>/g, "").trim();
+    const skillTags = this.skillRegistry
+      .getAll()
+      .map((s) => s.id)
+      .join("|");
+
+    const toolCallBlock = /<tool_call>[\s\S]*?<\/tool_call>/g;
+    const altToolBlocks = skillTags
+      ? new RegExp(`<(${skillTags})>\\s*[\\s\\S]*?\\s*<\\/\\1>`, "g")
+      : null;
+
+    const cleanMessage = aiMessage
+      .replace(toolCallBlock, "")
+      .replace(altToolBlocks ?? /$^/, "")
+      .trim();
 
     // Check if any tool requires confirmation
     const needsConfirmation = toolCalls.some((call) =>
@@ -362,15 +408,15 @@ If you don't need a tool, just respond naturally.`;
     this.context.addMessage("assistant", fullMessage, toolCalls, results);
 
     // Update context with scan results
-    const scanResult = results.find((r) =>
-      r.toolCallId.includes("web_scan")
-    );
-    if (scanResult?.success && scanResult.result) {
-      this.context.setLastScanResults(scanResult.result);
-      const target = toolCalls.find((t) => t.name === "web_scan")?.arguments
-        .targetUrl as string;
-      if (target) {
-        this.context.setCurrentTarget(target);
+    const scanCall = toolCalls.find((t) => t.name === "web_scan");
+    if (scanCall) {
+      const scanExec = results.find((r) => r.toolCallId === scanCall.id);
+      if (scanExec?.success && scanExec.result) {
+        this.context.setLastScanResults(scanExec.result);
+        const target = scanCall.arguments.targetUrl as string;
+        if (target) {
+          this.context.setCurrentTarget(target);
+        }
       }
     }
 
