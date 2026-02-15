@@ -29,15 +29,15 @@ function getApiKeyFromEnv(provider: string): string {
   return envVars[provider] || "";
 }
 
-export function createAIClient(): AIClient {
-    const config = getConfig();
+export async function createAIClient(): Promise<AIClient> {
+    const config = await getConfig();
 
     if (!config.ai.enabled) {
         throw new Error("AI analysis is not enabled. Run 'kramscan onboard' first.");
     }
 
     const provider = config.ai.provider;
-    let apiKey = config.ai.apiKey || getApiKeyFromEnv(provider);
+    const apiKey = config.ai.apiKey || getApiKeyFromEnv(provider);
     const model = config.ai.defaultModel;
 
     if (!apiKey) {

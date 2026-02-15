@@ -63,26 +63,161 @@ const defaults: Config = {
   }
 };
 
-function getEnvApiKey(provider: AiProviderName): string {
-  const envVars: Record<string, string> = {
-    openai: process.env.OPENAI_API_KEY || "",
-    anthropic: process.env.ANTHROPIC_API_KEY || "",
-    gemini: process.env.GEMINI_API_KEY || "",
-    mistral: process.env.MISTRAL_API_KEY || "",
-    openrouter: process.env.OPENROUTER_API_KEY || "",
-    kimi: process.env.KIMI_API_KEY || "",
-  };
-  return envVars[provider] || "";
-}
-
 export function isDebugEnabled(): boolean {
   return process.env.KRAMSCAN_DEBUG === "true" || process.env.KRAMSCAN_DEBUG === "1";
 }
 
-// Simple JSON-file config store (replaces ESM-only 'conf' package)
+// Secure credential manager using OS keychain
+class SecureCredentialManager {
+  private serviceName: string;
+  private useKeychain: boolean;
+  private fallbackPath: string;
+
+  constructor(serviceName: string) {
+    this.serviceName = serviceName;
+    this.useKeychain = this.detectKeychainSupport();
+    
+    const configDir = path.join(os.homedir(), `.${serviceName}`);
+    if (!fs.existsSync(configDir)) {
+      fs.mkdirSync(configDir, { recursive: true });
+    }
+    this.fallbackPath = path.join(configDir, ".secure");
+  }
+
+  private detectKeychainSupport(): boolean {
+    try {
+      // Check if we're in a CI environment or if keytar is available
+      if (process.env.CI || process.env.KRAMSCAN_DISABLE_KEYCHAIN) {
+        return false;
+      }
+      require("keytar");
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  async getPassword(account: string): Promise<string | null> {
+    if (this.useKeychain) {
+      try {
+        // eslint-disable-next-line @typescript-eslint/no-var-requires
+        const keytar = await import("keytar");
+        return await keytar.getPassword(this.serviceName, account);
+      } catch (error) {
+        // Fallback to file-based storage
+        return this.getFromFallback(account);
+      }
+    }
+    return this.getFromFallback(account);
+  }
+
+  async setPassword(account: string, password: string): Promise<void> {
+    if (this.useKeychain) {
+      try {
+        // eslint-disable-next-line @typescript-eslint/no-var-requires
+        const keytar = await import("keytar");
+        await keytar.setPassword(this.serviceName, account, password);
+        return;
+      } catch (error) {
+        // Fallback to file-based storage
+      }
+    }
+    await this.saveToFallback(account, password);
+  }
+
+  async deletePassword(account: string): Promise<boolean> {
+    if (this.useKeychain) {
+      try {
+        // eslint-disable-next-line @typescript-eslint/no-var-requires
+        const keytar = await import("keytar");
+        return await keytar.deletePassword(this.serviceName, account);
+      } catch (error) {
+        return this.deleteFromFallback(account);
+      }
+    }
+    return this.deleteFromFallback(account);
+  }
+
+  private getFromFallback(account: string): string | null {
+    try {
+      if (!fs.existsSync(this.fallbackPath)) {
+        return null;
+      }
+      const data = JSON.parse(fs.readFileSync(this.fallbackPath, "utf-8"));
+      const encrypted = data[account];
+      if (!encrypted) return null;
+      return this.decrypt(encrypted);
+    } catch {
+      return null;
+    }
+  }
+
+  private async saveToFallback(account: string, password: string): Promise<void> {
+    let data: Record<string, string> = {};
+    try {
+      if (fs.existsSync(this.fallbackPath)) {
+        data = JSON.parse(fs.readFileSync(this.fallbackPath, "utf-8"));
+      }
+    } catch {
+      // File doesn't exist or is corrupt, start fresh
+    }
+    
+    data[account] = this.encrypt(password);
+    
+    // Set restrictive permissions (owner read/write only)
+    fs.writeFileSync(this.fallbackPath, JSON.stringify(data, null, 2), { mode: 0o600 });
+  }
+
+  private deleteFromFallback(account: string): boolean {
+    try {
+      if (!fs.existsSync(this.fallbackPath)) {
+        return false;
+      }
+      const data = JSON.parse(fs.readFileSync(this.fallbackPath, "utf-8"));
+      if (!(account in data)) {
+        return false;
+      }
+      delete data[account];
+      fs.writeFileSync(this.fallbackPath, JSON.stringify(data, null, 2), { mode: 0o600 });
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  private encrypt(text: string): string {
+    // Simple XOR encryption with a machine-specific key
+    // This is not high-security but better than plaintext for fallback storage
+    const key = this.getMachineKey();
+    const buffer = Buffer.from(text);
+    const encrypted = Uint8Array.from(buffer, (byte, i) => byte ^ key[i % key.length]);
+    return Buffer.from(encrypted).toString("base64");
+  }
+
+  private decrypt(encrypted: string): string {
+    const key = this.getMachineKey();
+    const buffer = Buffer.from(encrypted, "base64");
+    const decrypted = Uint8Array.from(buffer, (byte, i) => byte ^ key[i % key.length]);
+    return Buffer.from(decrypted).toString("utf-8");
+  }
+
+  private getMachineKey(): Buffer {
+    // Use machine-specific data to generate a key
+    // This makes the encrypted data harder to decrypt on other machines
+    const data = [
+      os.hostname(),
+      os.userInfo().username,
+      os.platform(),
+    ].join("|");
+    return Buffer.from(data.repeat(4).slice(0, 32));
+  }
+}
+
+// Simple JSON-file config store with encrypted sensitive values
 class ConfigStore {
   private configPath: string;
   private data: Config;
+  private credentialManager: SecureCredentialManager;
 
   constructor(projectName: string, defaultConfig: Config) {
     const configDir = path.join(os.homedir(), `.${projectName}`);
@@ -90,16 +225,25 @@ class ConfigStore {
       fs.mkdirSync(configDir, { recursive: true });
     }
     this.configPath = path.join(configDir, "config.json");
+    this.credentialManager = new SecureCredentialManager(projectName);
 
     if (fs.existsSync(this.configPath)) {
       try {
         const raw = fs.readFileSync(this.configPath, "utf-8");
         this.data = { ...defaultConfig, ...JSON.parse(raw) };
       } catch {
-        this.data = { ...defaultConfig };
+        this.data = JSON.parse(JSON.stringify(defaultConfig));
       }
     } else {
-      this.data = { ...defaultConfig };
+      this.data = JSON.parse(JSON.stringify(defaultConfig));
+    }
+  }
+
+  async initialize(): Promise<void> {
+    // Load API key from secure storage
+    const storedKey = await this.credentialManager.getPassword("apiKey");
+    if (storedKey) {
+      this.data.ai.apiKey = storedKey;
     }
   }
 
@@ -120,7 +264,7 @@ class ConfigStore {
     return current;
   }
 
-  set(key: string, value: unknown): void {
+  async set(key: string, value: unknown): Promise<void> {
     const keys = key.split(".");
     let current: Record<string, unknown> = this.data as unknown as Record<string, unknown>;
     for (let i = 0; i < keys.length - 1; i++) {
@@ -130,33 +274,71 @@ class ConfigStore {
       current = current[keys[i]] as Record<string, unknown>;
     }
     current[keys[keys.length - 1]] = value;
-    this.save();
+    
+    // If setting API key, store it securely
+    if (key === "ai.apiKey" && typeof value === "string" && value) {
+      await this.credentialManager.setPassword("apiKey", value);
+    }
+    
+    await this.save();
   }
 
-  private save(): void {
-    fs.writeFileSync(this.configPath, JSON.stringify(this.data, null, 2), "utf-8");
+  private async save(): Promise<void> {
+    // Create a copy without the API key for the config file
+    const configToSave = {
+      ...this.data,
+      ai: {
+        ...this.data.ai,
+        apiKey: "", // Don't save API key in plain text
+      }
+    };
+    fs.writeFileSync(this.configPath, JSON.stringify(configToSave, null, 2), "utf-8");
+  }
+
+  async setConfig(config: Config): Promise<void> {
+    Object.assign(this.data, config);
+    
+    // Save API key securely if present
+    if (config.ai?.apiKey) {
+      await this.credentialManager.setPassword("apiKey", config.ai.apiKey);
+      this.data.ai.apiKey = config.ai.apiKey;
+    }
+    
+    await this.save();
   }
 }
 
 const store = new ConfigStore("kramscan", defaults);
 
+// Initialize async
+let initialized = false;
+async function ensureInitialized(): Promise<void> {
+  if (!initialized) {
+    await store.initialize();
+    initialized = true;
+  }
+}
+
 export function getConfigStore(): ConfigStore {
   return store;
 }
 
-export function getConfig(): Config {
+export async function getConfig(): Promise<Config> {
+  await ensureInitialized();
   return store.store;
 }
 
-export function getConfigValue(key: string): unknown {
+export async function getConfigValue(key: string): Promise<unknown> {
+  await ensureInitialized();
   return store.get(key);
 }
 
-export function setConfigValue(key: string, value: unknown): void {
-  store.set(key, value);
+export async function setConfigValue(key: string, value: unknown): Promise<void> {
+  await ensureInitialized();
+  await store.set(key, value);
 }
 
-export function setConfig(config: Config): void {
-  Object.assign(store.store, config);
-  (store as any).save();
+export async function setConfig(config: Config): Promise<void> {
+  await ensureInitialized();
+  await store.setConfig(config);
 }
