@@ -55,7 +55,7 @@ export function registerAnalyzeCommand(program: Command): void {
                 const spinner = logger.spinner("Analyzing vulnerabilities with AI...");
 
                 // Create AI client
-                const aiClient = createAIClient();
+                const aiClient = await createAIClient();
 
                 // Build analysis prompt
                 const prompt = buildAnalysisPrompt(scanResult);
