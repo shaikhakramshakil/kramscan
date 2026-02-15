@@ -7,7 +7,8 @@ node_modules/
 coverage/
 
 # Production
-dist/
+# dist/ - Uncomment below line if you don't want to track built files
+# dist/
 dist-ssr/
 *.local
 
