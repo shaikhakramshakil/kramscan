@@ -1,46 +1,14 @@
 import * as fs from "fs";
 import * as path from "path";
 import * as os from "os";
+import { Config, ConfigSchema, defaultScanProfiles, validateConfig, ScanProfile } from "./config-schema";
 
-export type AiProviderName =
-  | "openai"
-  | "anthropic"
-  | "gemini"
-  | "openrouter"
-  | "mistral"
-  | "kimi"
-  | "groq";
-export type ReportFormat = "word" | "txt" | "json";
-
-export interface Config {
-  ai: {
-    provider: AiProviderName;
-    apiKey: string;
-    defaultModel: string;
-    enabled: boolean;
-  };
-  scan: {
-    defaultTimeout: number;
-    maxThreads: number;
-    userAgent: string;
-    followRedirects: boolean;
-    verifySSL: boolean;
-    rateLimitPerSecond: number;
-    strictScope: boolean;
-  };
-  report: {
-    defaultFormat: ReportFormat;
-    companyName: string;
-    includeScreenshots: boolean;
-    severityThreshold: "info" | "low" | "medium" | "high" | "critical";
-  };
-  skills: Record<string, { enabled: boolean; timeout?: number }>;
-  proxy?: string;
-}
+export type { AiProviderName, ReportFormat, Config } from "./config-schema";
+export { defaultScanProfiles as scanProfiles, validateConfig, validateScanProfile, ScanProfile } from "./config-schema";
 
 const defaults: Config = {
   ai: {
-    provider: "openai" as AiProviderName,
+    provider: "openai",
     apiKey: "",
     defaultModel: "gpt-4",
     enabled: false,
@@ -52,13 +20,15 @@ const defaults: Config = {
     followRedirects: true,
     verifySSL: true,
     rateLimitPerSecond: 5,
-    strictScope: true
+    strictScope: true,
+    profiles: defaultScanProfiles,
+    defaultProfile: "balanced",
   },
   report: {
     defaultFormat: "word",
     companyName: "Your Company",
     includeScreenshots: false,
-    severityThreshold: "low"
+    severityThreshold: "low",
   },
   skills: {
     sqli: { enabled: true, timeout: 120 },
@@ -66,8 +36,8 @@ const defaults: Config = {
     headers: { enabled: true },
     csrf: { enabled: true },
     idor: { enabled: true },
-    jwt: { enabled: true }
-  }
+    jwt: { enabled: true },
+  },
 };
 
 export function isDebugEnabled(): boolean {
@@ -237,7 +207,13 @@ class ConfigStore {
     if (fs.existsSync(this.configPath)) {
       try {
         const raw = fs.readFileSync(this.configPath, "utf-8");
-        this.data = { ...defaultConfig, ...JSON.parse(raw) };
+        const parsed = JSON.parse(raw);
+        // Validate and merge with defaults
+        this.data = { ...defaultConfig, ...parsed };
+        // Ensure profiles are merged properly
+        if (parsed.scan?.profiles) {
+          this.data.scan.profiles = { ...defaultConfig.scan.profiles, ...parsed.scan.profiles };
+        }
       } catch {
         this.data = JSON.parse(JSON.stringify(defaultConfig));
       }
@@ -251,6 +227,14 @@ class ConfigStore {
     const storedKey = await this.credentialManager.getPassword("apiKey");
     if (storedKey) {
       this.data.ai.apiKey = storedKey;
+    }
+    
+    // Validate config on initialization
+    try {
+      this.data = validateConfig(this.data);
+    } catch (error) {
+      console.warn("Invalid config detected, using defaults:", (error as Error).message);
+      this.data = JSON.parse(JSON.stringify(defaults));
     }
   }
 
@@ -307,7 +291,9 @@ class ConfigStore {
   }
 
   async setConfig(config: Config): Promise<void> {
-    Object.assign(this.data, config);
+    // Validate before setting
+    const validated = validateConfig(config);
+    Object.assign(this.data, validated);
     
     // Save API key securely if present
     if (typeof config.ai?.apiKey === "string") {
@@ -319,6 +305,15 @@ class ConfigStore {
       this.data.ai.apiKey = config.ai.apiKey;
     }
     
+    await this.save();
+  }
+
+  getScanProfile(name: string): ScanProfile | undefined {
+    return this.data.scan.profiles[name];
+  }
+
+  async addScanProfile(name: string, profile: ScanProfile): Promise<void> {
+    this.data.scan.profiles[name] = profile;
     await this.save();
   }
 }
@@ -356,4 +351,14 @@ export async function setConfigValue(key: string, value: unknown): Promise<void>
 export async function setConfig(config: Config): Promise<void> {
   await ensureInitialized();
   await store.setConfig(config);
+}
+
+export async function getScanProfile(name: string): Promise<ScanProfile | undefined> {
+  await ensureInitialized();
+  return store.getScanProfile(name);
+}
+
+export async function addScanProfile(name: string, profile: ScanProfile): Promise<void> {
+  await ensureInitialized();
+  await store.addScanProfile(name, profile);
 }
