@@ -1,0 +1,17 @@
+# Enforce consistent line endings across the project
+* text=auto eol=lf
+
+# Explicitly mark TypeScript/JavaScript as text
+*.ts text eol=lf
+*.js text eol=lf
+*.json text eol=lf
+*.md text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+
+# Binary files
+*.png binary
+*.jpg binary
+*.gif binary
+*.ico binary
+*.pdf binary

@@ -10,9 +10,7 @@ import { registerAgentCommand } from "./commands/agent";
 import { registerScansCommand } from "./commands/scans";
 import { registerAiCommand } from "./commands/ai";
 import { isDebugEnabled } from "./core/config";
-import { printBanner, printInfo, theme } from "./utils/theme";
-
-const CLI_VERSION = "0.1.1";
+import { printBanner, printInfo, theme, CLI_VERSION } from "./utils/theme";
 
 let verboseMode = false;
 let debugMode = false;
@@ -83,10 +81,79 @@ async function showInteractiveMenu(): Promise<void> {
     return;
   }
 
+  let args: string[] = [action];
+
+  // Specific handling for commands that need input
+  if (action === "scan") {
+    const { url } = await inquirer.prompt([
+      {
+        type: "input",
+        name: "url",
+        message: theme.cyan("Enter the URL to scan:"),
+        validate: (input) => {
+          try {
+            new URL(input);
+            return true;
+          } catch {
+            return "Please enter a valid URL (e.g., https://example.com)";
+          }
+        }
+      }
+    ]);
+    args.push(url);
+  } else if (action === "analyze" || action === "report") {
+    const { listScans } = await import("./core/scan-index");
+    const scans = await listScans(10);
+
+    if (scans.length > 0) {
+      const { scanFile } = await inquirer.prompt([
+        {
+          type: "list",
+          name: "scanFile",
+          message: theme.cyan(`Select a scan to ${action}:`),
+          choices: [
+            ...scans.map(s => ({
+              name: `${s.timestamp} - ${s.hostname} (${s.summary.total} findings)`,
+              value: s.jsonPath
+            })),
+            { name: "Back to menu", value: "back" }
+          ]
+        }
+      ]);
+
+      if (scanFile === "back") {
+        return showInteractiveMenu();
+      }
+      args.push(scanFile);
+    } else {
+      console.log(theme.yellow(`\n  [!] No recent scans found. Please run a scan first.\n`));
+      await new Promise(r => setTimeout(r, 1500));
+      return showInteractiveMenu();
+    }
+  }
+
   console.log(theme.green(`\n  > Launching ${selected?.label || action}...\n`));
 
   const program = createProgram();
-  await program.parseAsync(["node", "kramscan", action]);
+  try {
+    await program.parseAsync(["node", "kramscan", ...args]);
+
+    // After execution, ask if they want to go back to the menu
+    const { back } = await inquirer.prompt([
+      {
+        type: "confirm",
+        name: "back",
+        message: theme.cyan("Return to main menu?"),
+        default: true
+      }
+    ]);
+
+    if (back) {
+      return showInteractiveMenu();
+    }
+  } catch (error) {
+    // Error handling is managed by the commands themselves or global handlers
+  }
 }
 
 async function showDirectCommandInput(): Promise<void> {
@@ -142,6 +209,33 @@ function createProgram(): Command {
   registerAgentCommand(program);
   registerScansCommand(program);
   registerAiCommand(program);
+
+  // Version subcommand with detailed environment info
+  program
+    .command("version")
+    .description("Show detailed version and environment information")
+    .action(async () => {
+      const os = await import("os");
+      let aiProvider = "not configured";
+      try {
+        const { getConfig } = await import("./core/config");
+        const config = await getConfig();
+        if (config.ai.enabled) {
+          aiProvider = `${config.ai.provider} (${config.ai.defaultModel})`;
+        }
+      } catch {
+        // Config not available
+      }
+
+      console.log("");
+      console.log(theme.brightWhite.bold("KramScan") + " " + theme.cyan(`v${CLI_VERSION}`));
+      console.log(theme.gray("─".repeat(40)));
+      console.log(theme.white("  Node.js:    ") + theme.cyan(process.version));
+      console.log(theme.white("  Platform:   ") + theme.cyan(`${os.platform()} ${os.arch()}`));
+      console.log(theme.white("  OS:         ") + theme.cyan(os.release()));
+      console.log(theme.white("  AI Provider:") + " " + theme.cyan(aiProvider));
+      console.log("");
+    });
 
   return program;
 }

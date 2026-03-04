@@ -4,6 +4,7 @@ import axios from "axios";
 import OpenAI from "openai";
 import { Config, getConfig, setConfig } from "../core/config";
 import { logger } from "../utils/logger";
+import { theme } from "../utils/theme";
 
 function getDefaultModel(provider: Config["ai"]["provider"]): string {
   switch (provider) {
@@ -78,10 +79,10 @@ async function modelExists(
       provider === "openrouter"
         ? "https://openrouter.ai/api/v1"
         : provider === "kimi"
-        ? "https://api.moonshot.cn/v1"
-        : provider === "groq"
-        ? "https://api.groq.com/openai/v1"
-        : undefined;
+          ? "https://api.moonshot.cn/v1"
+          : provider === "groq"
+            ? "https://api.groq.com/openai/v1"
+            : undefined;
 
     const client = new OpenAI(baseURL ? { apiKey, baseURL } : { apiKey });
     const resp = await client.models.list();
@@ -99,9 +100,26 @@ export function registerOnboardCommand(program: Command): void {
       const config = await getConfig();
 
       console.log("");
-      console.log("=== KramScan Setup Wizard ===");
-      console.log("Configure your scanning environment");
+      console.log(theme.brand.bold("🚀 KramScan Setup Wizard"));
+      console.log(theme.gray("─".repeat(50)));
+      console.log(theme.white("  Configure your scanning environment in a few easy steps."));
       console.log("");
+
+      // Smart detection for API keys
+      const detectedProviders = Object.keys({
+        openai: process.env.OPENAI_API_KEY,
+        anthropic: process.env.ANTHROPIC_API_KEY,
+        gemini: process.env.GEMINI_API_KEY,
+        mistral: process.env.MISTRAL_API_KEY,
+        openrouter: process.env.OPENROUTER_API_KEY,
+        kimi: process.env.KIMI_API_KEY,
+        groq: process.env.GROQ_API_KEY,
+      }).filter(p => !!getEnvApiKey(p));
+
+      if (detectedProviders.length > 0) {
+        console.log(theme.green(`  ✨ Detected API keys in environment for: ${detectedProviders.join(", ")}`));
+        console.log("");
+      }
 
       const answers = await inquirer.prompt([
         {

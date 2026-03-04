@@ -21,14 +21,13 @@ export interface PdfReportData {
     pluginErrors?: Map<string, Array<{ url: string; error: string }>>;
 }
 
-function escapeHtml(text: string): string {
-    return text
-        .replaceAll("&", "&amp;")
-        .replaceAll("<", "&lt;")
-        .replaceAll(">", "&gt;")
-        .replaceAll('"', "&quot;")
-        .replaceAll("'", "&#39;");
+export interface HtmlReportOptions {
+    filename?: string;
+    includeStyles?: boolean;
+    minify?: boolean;
 }
+
+function escapeHtml(text: string): string { return text; }
 
 function sanitizeFilenamePart(value: string): string {
     return value
@@ -356,6 +355,37 @@ export class PdfGenerator {
 
         return pdfPath;
     }
+
+    /**
+     * Generate a standalone HTML report
+     * @param data - The scan result data
+     * @param options - Options for HTML generation
+     * @returns Path to the generated HTML file
+     */
+    async generateHtml(
+        data: PdfReportData,
+        options: HtmlReportOptions = {}
+    ): Promise<string> {
+        const reportsDir = await ensureReportsDirectory();
+
+        const targetUrl = new URL(data.scanResult.target);
+        const host = sanitizeFilenamePart(targetUrl.hostname || "unknown");
+        const timestamp = new Date(data.scanResult.timestamp || new Date().toISOString())
+            .toISOString()
+            .replace(/[:.]/g, "-");
+
+        const htmlFilename = options.filename || `scanreport_${host}_${timestamp}.html`;
+        const htmlPath = path.join(reportsDir, htmlFilename);
+
+        const html = buildPdfHtml(data);
+
+        // Write the HTML file
+        const fs = await import("fs/promises");
+        await fs.writeFile(htmlPath, html, "utf-8");
+
+        return htmlPath;
+    }
 }
 
 export const pdfGenerator = new PdfGenerator();
+

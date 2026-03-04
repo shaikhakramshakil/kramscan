@@ -1,4 +1,19 @@
 import chalk from "chalk";
+import * as path from "path";
+import * as fs from "fs";
+
+// Read version from package.json (single source of truth)
+function getPackageVersion(): string {
+    try {
+        const pkgPath = path.resolve(__dirname, "..", "..", "package.json");
+        const pkg = JSON.parse(fs.readFileSync(pkgPath, "utf-8"));
+        return pkg.version || "0.0.0";
+    } catch {
+        return "0.0.0";
+    }
+}
+
+export const CLI_VERSION = getPackageVersion();
 
 export const theme = {
     // Colors
@@ -18,7 +33,7 @@ export const theme = {
     brightGreen: chalk.green.bold,
     brightYellow: chalk.yellow.bold,
     brightRed: chalk.red.bold,
-    
+
     // Severity colors
     critical: chalk.red.bold,
     high: chalk.red,
@@ -29,7 +44,6 @@ export const theme = {
     green: chalk.green,
 };
 
-export const CLI_VERSION = "0.1.1";
 
 // ─── ASCII Art Banner ──────────────────────────────────────────────
 export function printBanner(): void {

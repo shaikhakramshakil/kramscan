@@ -2,25 +2,13 @@ import { Command } from "commander";
 import { Scanner, ScanOptions, ScanError } from "../core/scanner";
 import { addScanToIndex } from "../core/scan-index";
 import { ensureScansDirectory } from "../core/scan-storage";
+import { scanProfiles, ScanProfile } from "../core/config";
 import { pdfGenerator, PdfReportData } from "../reports/PdfGenerator";
 import { displayScanSummary, theme } from "../utils/theme";
 import { logger } from "../utils/logger";
 import fs from "fs/promises";
 import path from "path";
 import chalk from "chalk";
-
-export interface ScanProfile {
-    depth: number;
-    timeout: number;
-    maxPages: number;
-    maxLinksPerPage: number;
-}
-
-export const scanProfiles: Record<string, ScanProfile> = {
-    quick: { depth: 1, timeout: 15000, maxPages: 10, maxLinksPerPage: 20 },
-    balanced: { depth: 2, timeout: 30000, maxPages: 30, maxLinksPerPage: 50 },
-    deep: { depth: 3, timeout: 60000, maxPages: 100, maxLinksPerPage: 100 },
-};
 
 export function registerScanCommand(program: Command): void {
     program
@@ -34,24 +22,33 @@ export function registerScanCommand(program: Command): void {
         .option("--include <regex...>", "Only include URLs matching these regex patterns")
         .option("--exclude <regex...>", "Exclude URLs matching these regex patterns")
         .option("--no-pdf", "Disable automatic PDF report generation")
+        .option("--json", "Output scan results as JSON to stdout (CI/CD mode)")
         .option("-o, --output <file>", "Save results to file")
         .option("--headless", "Run in headless mode", true)
         .option("--no-plugins", "Disable plugin-based scanning (use legacy mode)")
         .action(async (url: string, options) => {
-            console.log("");
-            console.log(theme.brand.bold("🔍 Starting Security Scan"));
-            console.log(theme.gray("─".repeat(50)));
-            console.log("");
+            const jsonMode = options.json === true;
+
+            if (!jsonMode) {
+                console.log("");
+                console.log(theme.brand.bold("🔍 Starting Security Scan"));
+                console.log(theme.gray("─".repeat(50)));
+                console.log("");
+            }
 
             // Validate URL
             try {
                 new URL(url);
             } catch (error) {
-                logger.error(`Invalid URL: ${url}`);
+                if (jsonMode) {
+                    console.log(JSON.stringify({ error: `Invalid URL: ${url}` }));
+                } else {
+                    logger.error(`Invalid URL: ${url}`);
+                }
                 process.exit(1);
             }
 
-            const spinner = logger.spinner("Initializing scanner...");
+            const spinner = jsonMode ? null : logger.spinner("Initializing scanner...");
 
             try {
                 const profile = String(options.profile || "balanced").toLowerCase();
@@ -78,44 +75,58 @@ export function registerScanCommand(program: Command): void {
                     throw new Error("max-links-per-page must be a positive number.");
                 }
 
+                // Display scan estimate
+                if (!jsonMode) {
+                    const estimateMap: Record<string, string> = {
+                        quick: "~15–30s",
+                        balanced: "~30–90s",
+                        deep: "~2–5min",
+                    };
+                    const estimate = estimateMap[profile] || estimateMap.balanced;
+                    console.log(theme.gray(`  ⏱  Estimated duration: ${estimate} (${profile} profile)`));
+                    console.log("");
+                }
+
                 const scanner = new Scanner(options.plugins !== false);
-                
+
                 // Set up event listeners for progress feedback
                 let currentStage = "initializing";
                 let vulnerabilitiesFound = 0;
-                
+
                 scanner.on("scan:start", () => {
-                    spinner.text = `Starting scan of ${url}...`;
+                    if (spinner) spinner.text = `Starting scan of ${url}...`;
                     currentStage = "scanning";
                 });
 
                 scanner.on("crawl:page", (data) => {
-                    spinner.text = `Crawling: ${data.url} (${data.crawledCount}/${data.maxPages})`;
+                    if (spinner) spinner.text = `Crawling: ${data.url} (${data.crawledCount}/${data.maxPages})`;
                     currentStage = "crawling";
                 });
 
                 scanner.on("form:test", (data) => {
-                    spinner.text = `Testing forms on ${data.url} (${data.formCount} forms)...`;
+                    if (spinner) spinner.text = `Testing forms on ${data.url} (${data.formCount} forms)...`;
                     currentStage = "testing forms";
                 });
 
                 scanner.on("vuln:found", (data) => {
                     vulnerabilitiesFound++;
-                    spinner.stopAndPersist({ 
-                        symbol: theme.warning("⚠️"), 
-                        text: `Found ${data.vulnerability.severity} vulnerability: ${data.vulnerability.title}` 
-                    });
-                    spinner.start(`Continuing scan (${vulnerabilitiesFound} vulns found)...`);
+                    if (spinner) {
+                        spinner.stopAndPersist({
+                            symbol: theme.warning("⚠️"),
+                            text: `Found ${data.vulnerability.severity} vulnerability: ${data.vulnerability.title}`
+                        });
+                        spinner.start(`Continuing scan (${vulnerabilitiesFound} vulns found)...`);
+                    }
                 });
 
                 scanner.on("scan:complete", () => {
-                    spinner.text = "Finalizing scan results...";
+                    if (spinner) spinner.text = "Finalizing scan results...";
                 });
 
                 scanner.on("crawl:error", (data) => {
-                    logger.warn(`Failed to crawl ${data.url}: ${data.error.message}`);
+                    if (!jsonMode) logger.warn(`Failed to crawl ${data.url}: ${data.error.message}`);
                 });
-                
+
                 const scanOptions: ScanOptions = {
                     depth: parsedDepth,
                     timeout: parsedTimeout,
@@ -129,7 +140,7 @@ export function registerScanCommand(program: Command): void {
 
                 const result = await scanner.scan(url, scanOptions);
 
-                spinner.succeed("Scan complete!");
+                if (spinner) spinner.succeed("Scan complete!");
 
                 // Save results
                 const scanDir = await ensureScansDirectory();
@@ -152,6 +163,12 @@ export function registerScanCommand(program: Command): void {
                 };
 
                 await fs.writeFile(filepath, JSON.stringify(resultWithErrors, null, 2));
+
+                // In JSON mode, output the result to stdout and exit
+                if (jsonMode) {
+                    console.log(JSON.stringify(resultWithErrors, null, 2));
+                    return;
+                }
 
                 let pdfPath: string | null = null;
                 if (options.pdf !== false) {
@@ -200,10 +217,10 @@ export function registerScanCommand(program: Command): void {
                 // Display any scan errors
                 const scanErrorsList = scanner.getScanErrors();
                 const pluginErrorsMap = scanner.getPluginErrors();
-                
+
                 if (scanErrorsList.length > 0 || pluginErrorsMap.size > 0) {
                     console.log(theme.warning("⚠️  Some URLs/plugins encountered errors:"));
-                    
+
                     if (scanErrorsList.length > 0) {
                         console.log(theme.yellow("  Crawl Errors:"));
                         for (const error of scanErrorsList.slice(0, 5)) {
@@ -216,11 +233,7 @@ export function registerScanCommand(program: Command): void {
 
                     if (pluginErrorsMap.size > 0) {
                         console.log(theme.yellow("  Plugin Errors:"));
-                        let totalPluginErrors = 0;
-                        pluginErrorsMap.forEach((errors, pluginName) => {
-                            totalPluginErrors += errors.length;
-                        });
-                        
+
                         for (const [pluginName, errors] of pluginErrorsMap) {
                             console.log(theme.gray(`    ${pluginName}:`));
                             for (const error of errors.slice(0, 3)) {
@@ -230,7 +243,8 @@ export function registerScanCommand(program: Command): void {
                                 console.log(theme.gray(`      ... and ${errors.length - 3} more`));
                             }
                         }
-                        
+
+                        const totalPluginErrors = Array.from(pluginErrorsMap.values()).reduce((sum, errs) => sum + errs.length, 0);
                         if (totalPluginErrors > 10) {
                             console.log(theme.gray(`  Total plugin errors: ${totalPluginErrors}`));
                         }
@@ -238,9 +252,42 @@ export function registerScanCommand(program: Command): void {
                     console.log("");
                 }
 
+                // Add "What's Next" interactive prompt
+                if (!jsonMode) {
+                    const inquirer = (await import("inquirer")).default;
+                    const { nextAction } = await inquirer.prompt([
+                        {
+                            type: "list",
+                            name: "nextAction",
+                            message: theme.cyan("Scan complete! What would you like to do next?"),
+                            choices: [
+                                { name: "🧠  Analyze findings with AI", value: "analyze" },
+                                { name: "📄  Generate a professional report", value: "report" },
+                                { name: "👋  Exit to main menu", value: "exit" }
+                            ]
+                        }
+                    ]);
+
+                    if (nextAction === "analyze") {
+                        const { registerAnalyzeCommand } = await import("./analyze");
+                        const analyzeProgram = new Command();
+                        registerAnalyzeCommand(analyzeProgram);
+                        await analyzeProgram.parseAsync(["node", "kramscan", "analyze", filepath]);
+                    } else if (nextAction === "report") {
+                        const { registerReportCommand } = await import("./report");
+                        const reportProgram = new Command();
+                        registerReportCommand(reportProgram);
+                        await reportProgram.parseAsync(["node", "kramscan", "report", filepath]);
+                    }
+                }
+
             } catch (error) {
-                spinner.fail("Scan failed");
-                logger.error((error as Error).message);
+                if (spinner) spinner.fail("Scan failed");
+                if (jsonMode) {
+                    console.log(JSON.stringify({ error: (error as Error).message }));
+                } else {
+                    logger.error((error as Error).message);
+                }
                 process.exit(1);
             }
         });
