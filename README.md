@@ -44,13 +44,14 @@ Web security is complex and often fragmented. Developers rely on multiple disjoi
 | :--- | :--- |
 | 🔍 **Automated Vulnerability Engine** | Detects XSS, SQL Injection, CSRF, insecure headers, and more using Puppeteer-powered crawling. |
 | 🔌 **Modular Plugin System** | Extensible architecture for custom vulnerability detection plugins. Built-in plugins for common vulnerabilities. |
-| 🤖 **Interactive AI Agent** | A conversational security assistant that understands natural language commands like "scan example.com". |
-| 🧠 **Multi-Provider AI Analysis** | Supports OpenAI, Anthropic, Google Gemini, Mistral, OpenRouter, and Kimi (Moonshot). |
+| 🤖 **Interactive AI Agent** | A conversational security assistant with **Autonomous Verification** skills to confirm findings live. |
+| 🧠 **Multi-Provider AI Analysis** | Supports OpenAI, Anthropic, Google Gemini, Mistral, OpenRouter, and more for results auditing. |
+| 📝 **AI Executive Summaries** | Automatically generates business-oriented summaries for Word, JSON, and TXT reports. |
 | 📊 **Event-Driven Feedback** | Real-time progress updates with dynamic spinners and live vulnerability alerts during scanning. |
-| 📄 **Professional Reporting** | Generates detailed PDF, DOCX, TXT, and JSON reports with executive summaries, remediation steps, and error tracking. |
+| 📄 **Professional Reporting** | Generates detailed PDF, DOCX, TXT, and JSON reports with remediation steps and error tracking. |
 | 🌐 **Headless Browser Testing** | Renders modern SPAs (Single Page Applications) to find vulnerabilities in dynamic content. |
-| ⚡ **CLI-First Architecture** | Optimized for speed, scriptability, and seamless integration into CI/CD pipelines. |
-| 🛡️ **Error Resilience** | Continue scanning even if individual URLs or plugins fail. Comprehensive error tracking in reports. |
+| ⚡ **Smarter User Flow** | Revamped interactive menu and post-scan "Golden Path" prompts for a guided experience. |
+| 🛡️ **Error Resilience** | Robust configuration defaults and graceful recovery if individual URLs or plugins fail. |
 
 <br />
 
@@ -178,8 +179,14 @@ You can provide API keys via environment variables (useful for CI/CD) instead of
 | Kimi | `KIMI_API_KEY` |
 | Groq | `GROQ_API_KEY` |
 
-### Model Preflight (Onboarding)
-During `kramscan onboard`, KramScan will try to validate the model you entered against the provider's live model list (best-effort) and warn if the model is invalid.
+### Smart Environment Detection
+KramScan automatically detects API keys in your environment variables. During `kramscan onboard`, the tool will identify and pre-configure providers like OpenAI, Anthropic, and Gemini if their keys are found in your session.
+
+### AI-Powered Context-Aware Payloads
+The scanning engine now utilizes AI to generate payloads tailored to the specific context of your application, significantly increasing detection rates against filtered inputs and complex WAFs.
+
+### Autonomous Finding Verification
+The `kramscan agent` can now independently verify reported vulnerabilities using non-destructive, context-aware payloads to differentiate between theoretical findings and exploitable risks.
 
 <br />
 
@@ -220,15 +227,15 @@ kramscan scan https://example.com
 
 | Command | Description | Status |
 | :--- | :--- | :---: |
-| `kramscan` | Launch the interactive dashboard menu. | ✅ Stable |
-| `kramscan scan <url>` | Run a comprehensive vulnerability scan. | ✅ Stable |
-| `kramscan agent` | Start the conversational AI security assistant. | ✅ Stable |
-| `kramscan analyze` | Analyze previous scan results using the configured AI. | ✅ Stable |
-| `kramscan report` | Generate a professional report from scan data. | ✅ Stable |
-| `kramscan onboard` | Run the configuration and setup wizard. | ✅ Stable |
-| `kramscan doctor` | Verify environment health and dependencies. | ✅ Stable |
-| `kramscan config` | View and edit current configuration settings. | ✅ Stable |
-| `kramscan scans` | List and inspect recent scans. | ✅ Stable |
+| `kramscan` | Launch the interactive dashboard menu with smart argument prompting. | ✅ Stable |
+| `kramscan scan <url>` | Run a comprehensive vulnerability scan with post-scan prompts. | ✅ Stable |
+| `kramscan agent` | Start the AI security assistant with autonomous verification skills. | ✅ Stable |
+| `kramscan analyze` | AI-powered analysis with proactive onboarding redirection. | ✅ Stable |
+| `kramscan report` | Generate professional reports with optional AI executive summaries. | ✅ Stable |
+| `kramscan onboard` | Smart setup wizard with environment key detection. | ✅ Stable |
+| `kramscan doctor` | Verify environment health and check for Docker dependencies. | ✅ Stable |
+| `kramscan config` | View and edit current configuration with robust schema defaults. | ✅ Stable |
+| `kramscan scans` | List and inspect recent scans from the persistent index. | ✅ Stable |
 | `kramscan ai` | AI helpers (model listing and connectivity test). | ✅ Stable |
 
 <br />
@@ -334,6 +341,9 @@ Agent: Scan complete! Found 2 High severity issues.
 - [x] **Event-driven progress feedback** ✅
 - [x] **Error resilience and recovery** ✅
 - [x] **Zod schema validation** ✅
+- [x] **AI Executive Summaries** ✅
+- [x] **Autonomous Verification Agent** ✅
+- [x] **Smarter Interactive Flows** ✅
 - [ ] CI/CD integration (GitHub Actions, GitLab CI)
 - [ ] Web-based dashboard UI
 - [ ] SARIF export format
