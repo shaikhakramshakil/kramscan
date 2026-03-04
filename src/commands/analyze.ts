@@ -4,6 +4,7 @@ import { createAIClient } from "../core/ai-client";
 import { ScanResult } from "../core/vulnerability-detector";
 import { resolveScanFile } from "../core/scan-storage";
 import { logger } from "../utils/logger";
+import { theme } from "../utils/theme";
 import fs from "fs/promises";
 
 export function registerAnalyzeCommand(program: Command): void {
@@ -37,6 +38,40 @@ export function registerAnalyzeCommand(program: Command): void {
         }
 
         spinner = logger.spinner("Analyzing vulnerabilities with AI...");
+
+        const { getConfig } = await import("../core/config");
+        const config = await getConfig();
+
+        if (!config.ai.enabled) {
+          spinner.stop();
+          const { default: inquirer } = await import("inquirer");
+          const { setup } = await inquirer.prompt([
+            {
+              type: "confirm",
+              name: "setup",
+              message: theme.yellow("AI analysis is not enabled. Would you like to set it up now?"),
+              default: true,
+            },
+          ]);
+
+          if (setup) {
+            const { registerOnboardCommand } = await import("./onboard");
+            const onboardProgram = new Command();
+            registerOnboardCommand(onboardProgram);
+            await onboardProgram.parseAsync(["node", "kramscan", "onboard"]);
+
+            // Re-check after onboarding
+            const updatedConfig = await getConfig();
+            if (!updatedConfig.ai.enabled) {
+              logger.error("AI analysis still not enabled. Exiting.");
+              return;
+            }
+            spinner.start("Analyzing vulnerabilities with AI...");
+          } else {
+            logger.warn("AI analysis skipped.");
+            return;
+          }
+        }
 
         const aiClient = await createAIClient();
         const prompt = buildAnalysisPrompt(scanResult);

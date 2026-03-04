@@ -2,9 +2,13 @@ import * as fs from "fs";
 import * as path from "path";
 import * as os from "os";
 import { Config, ConfigSchema, defaultScanProfiles, validateConfig, ScanProfile } from "./config-schema";
+import { CLI_VERSION } from "../utils/theme";
 
 export type { AiProviderName, ReportFormat, Config } from "./config-schema";
 export { defaultScanProfiles as scanProfiles, validateConfig, validateScanProfile, ScanProfile } from "./config-schema";
+
+// Re-export errors for convenience
+export * from "./errors";
 
 const defaults: Config = {
   ai: {
@@ -16,7 +20,7 @@ const defaults: Config = {
   scan: {
     defaultTimeout: 60,
     maxThreads: 5,
-    userAgent: "KramScan/0.1.0",
+    userAgent: `KramScan/${CLI_VERSION}`,
     followRedirects: true,
     verifySSL: true,
     rateLimitPerSecond: 5,
@@ -53,7 +57,7 @@ class SecureCredentialManager {
   constructor(serviceName: string) {
     this.serviceName = serviceName;
     this.useKeychain = this.detectKeychainSupport();
-    
+
     const configDir = path.join(os.homedir(), `.${serviceName}`);
     if (!fs.existsSync(configDir)) {
       fs.mkdirSync(configDir, { recursive: true });
@@ -138,9 +142,9 @@ class SecureCredentialManager {
     } catch {
       // File doesn't exist or is corrupt, start fresh
     }
-    
+
     data[account] = this.encrypt(password);
-    
+
     // Set restrictive permissions (owner read/write only)
     fs.writeFileSync(this.fallbackPath, JSON.stringify(data, null, 2), { mode: 0o600 });
   }
@@ -228,7 +232,7 @@ class ConfigStore {
     if (storedKey) {
       this.data.ai.apiKey = storedKey;
     }
-    
+
     // Validate config on initialization
     try {
       this.data = validateConfig(this.data);
@@ -265,7 +269,7 @@ class ConfigStore {
       current = current[keys[i]] as Record<string, unknown>;
     }
     current[keys[keys.length - 1]] = value;
-    
+
     // If setting API key, store it securely
     if (key === "ai.apiKey" && typeof value === "string") {
       if (value) {
@@ -274,7 +278,7 @@ class ConfigStore {
         await this.credentialManager.deletePassword("apiKey");
       }
     }
-    
+
     await this.save();
   }
 
@@ -294,7 +298,7 @@ class ConfigStore {
     // Validate before setting
     const validated = validateConfig(config);
     Object.assign(this.data, validated);
-    
+
     // Save API key securely if present
     if (typeof config.ai?.apiKey === "string") {
       if (config.ai.apiKey) {
@@ -304,7 +308,7 @@ class ConfigStore {
       }
       this.data.ai.apiKey = config.ai.apiKey;
     }
-    
+
     await this.save();
   }
 

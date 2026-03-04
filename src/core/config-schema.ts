@@ -22,40 +22,6 @@ export const ScanProfileSchema = z.object({
   maxLinksPerPage: z.number().int().min(1),
 });
 
-export const ConfigSchema = z.object({
-  ai: z.object({
-    provider: AiProviderNameSchema,
-    apiKey: z.string(),
-    defaultModel: z.string(),
-    enabled: z.boolean(),
-  }),
-  scan: z.object({
-    defaultTimeout: z.number().int().min(1000),
-    maxThreads: z.number().int().min(1).max(20),
-    userAgent: z.string(),
-    followRedirects: z.boolean(),
-    verifySSL: z.boolean(),
-    rateLimitPerSecond: z.number().int().min(1).max(100),
-    strictScope: z.boolean(),
-    profiles: z.record(ScanProfileSchema),
-    defaultProfile: z.string(),
-  }),
-  report: z.object({
-    defaultFormat: ReportFormatSchema,
-    companyName: z.string(),
-    includeScreenshots: z.boolean(),
-    severityThreshold: SeverityThresholdSchema,
-  }),
-  skills: z.record(z.object({
-    enabled: z.boolean(),
-    timeout: z.number().int().optional(),
-  })),
-  proxy: z.string().optional(),
-});
-
-export type Config = z.infer<typeof ConfigSchema>;
-export type AiProviderName = z.infer<typeof AiProviderNameSchema>;
-export type ReportFormat = z.infer<typeof ReportFormatSchema>;
 export type ScanProfile = z.infer<typeof ScanProfileSchema>;
 
 // Default scan profiles
@@ -64,6 +30,41 @@ export const defaultScanProfiles: Record<string, ScanProfile> = {
   balanced: { depth: 2, timeout: 30000, maxPages: 30, maxLinksPerPage: 50 },
   deep: { depth: 3, timeout: 60000, maxPages: 100, maxLinksPerPage: 100 },
 };
+
+export const ConfigSchema = z.object({
+  ai: z.object({
+    provider: AiProviderNameSchema.default("openai"),
+    apiKey: z.string().default(""),
+    defaultModel: z.string().default("gpt-4"),
+    enabled: z.boolean().default(false),
+  }),
+  scan: z.object({
+    defaultTimeout: z.number().int().min(1000).default(30000),
+    maxThreads: z.number().int().min(1).max(20).default(5),
+    userAgent: z.string().default("KramScan/0.1.1"),
+    followRedirects: z.boolean().default(true),
+    verifySSL: z.boolean().default(true),
+    rateLimitPerSecond: z.number().int().min(1).max(100).default(5),
+    strictScope: z.boolean().default(true),
+    profiles: z.record(ScanProfileSchema).default(defaultScanProfiles),
+    defaultProfile: z.string().default("balanced"),
+  }),
+  report: z.object({
+    defaultFormat: ReportFormatSchema.default("word"),
+    companyName: z.string().default("Your Company"),
+    includeScreenshots: z.boolean().default(false),
+    severityThreshold: SeverityThresholdSchema.default("low"),
+  }),
+  skills: z.record(z.object({
+    enabled: z.boolean().default(true),
+    timeout: z.number().int().optional(),
+  })).default({}),
+  proxy: z.string().optional(),
+});
+
+export type Config = z.infer<typeof ConfigSchema>;
+export type AiProviderName = z.infer<typeof AiProviderNameSchema>;
+export type ReportFormat = z.infer<typeof ReportFormatSchema>;
 
 // Validation function
 export function validateConfig(config: unknown): Config {
