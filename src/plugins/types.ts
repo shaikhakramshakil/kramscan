@@ -7,6 +7,7 @@ export interface PluginContext {
   baseUrl: string;
   timeout: number;
   userAgent: string;
+  payloadGenerator?: any; // Use any to avoid circular dependency, define interface if needed
 }
 
 export interface VulnerabilityTestResult {
@@ -20,22 +21,22 @@ export interface VulnerabilityPlugin {
   readonly type: VulnerabilityType;
   readonly description: string;
   readonly enabled: boolean;
-  
+
   /**
    * Test a URL parameter for this vulnerability
    */
   testParameter?(context: PluginContext, param: string, value: string): Promise<VulnerabilityTestResult>;
-  
+
   /**
    * Test a form input for this vulnerability
    */
   testFormInput?(context: PluginContext, formData: FormData): Promise<VulnerabilityTestResult>;
-  
+
   /**
    * Analyze page content for this vulnerability
    */
   analyzeContent?(context: PluginContext, content: string): Promise<Vulnerability[]>;
-  
+
   /**
    * Analyze HTTP headers for this vulnerability
    */
@@ -57,7 +58,7 @@ export abstract class BaseVulnerabilityPlugin implements VulnerabilityPlugin {
   abstract readonly type: VulnerabilityType;
   abstract readonly description: string;
   enabled = true;
-  
+
   protected createVulnerability(
     title: string,
     description: string,
@@ -78,11 +79,11 @@ export abstract class BaseVulnerabilityPlugin implements VulnerabilityPlugin {
       cwe,
     };
   }
-  
+
   protected success(vulnerability: Vulnerability): VulnerabilityTestResult {
     return { found: true, vulnerability };
   }
-  
+
   protected failure(error?: string): VulnerabilityTestResult {
     return { found: false, error };
   }

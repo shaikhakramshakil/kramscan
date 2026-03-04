@@ -13,6 +13,7 @@ import path from "path";
 import { getConfig } from "../core/config";
 import { ensureReportsDirectory, resolveScanFile } from "../core/scan-storage";
 import { ScanResult } from "../core/vulnerability-detector";
+import { createAIClient, generateExecutiveSummary } from "../core/ai-client";
 import { logger } from "../utils/logger";
 
 export function registerReportCommand(program: Command): void {
@@ -21,6 +22,7 @@ export function registerReportCommand(program: Command): void {
     .description("Generate a professional security report")
     .option("-f, --format <type>", "Report format: word|json|txt")
     .option("-o, --output <file>", "Output filename")
+    .option("--ai-summary", "Generate an AI-powered executive summary")
     .action(async (scanFile: string | undefined, options) => {
       console.log("");
       console.log(chalk.bold.cyan("Generating Security Report"));
@@ -42,19 +44,31 @@ export function registerReportCommand(program: Command): void {
         const config = await getConfig();
         const format = (options.format || config.report.defaultFormat) as string;
 
+        let aiSummary: string | undefined;
+        if (options.aiSummary) {
+          spinner = logger.spinner("Generating AI executive summary...");
+          try {
+            const aiClient = await createAIClient();
+            aiSummary = await generateExecutiveSummary(aiClient, scanResult);
+            spinner.succeed("AI summary generated!");
+          } catch (err) {
+            spinner.warn(`AI summary failed: ${(err as Error).message}`);
+          }
+        }
+
         spinner = logger.spinner(`Generating ${format.toUpperCase()} report...`);
 
         let outputPath: string;
 
         switch (format) {
           case "word":
-            outputPath = await generateWordReport(scanResult, options.output);
+            outputPath = await generateWordReport(scanResult, options.output, aiSummary);
             break;
           case "json":
-            outputPath = await generateJsonReport(scanResult, options.output);
+            outputPath = await generateJsonReport(scanResult, options.output, aiSummary);
             break;
           case "txt":
-            outputPath = await generateTxtReport(scanResult, options.output);
+            outputPath = await generateTxtReport(scanResult, options.output, aiSummary);
             break;
           default:
             throw new Error(`Unsupported format: ${format}`);
@@ -77,7 +91,8 @@ export function registerReportCommand(program: Command): void {
 
 async function generateWordReport(
   scanResult: ScanResult,
-  outputFile?: string
+  outputFile?: string,
+  aiSummary?: string
 ): Promise<string> {
   const doc = new Document({
     sections: [
@@ -106,13 +121,9 @@ async function generateWordReport(
           new Paragraph({
             children: [
               new TextRun({
-                text: `This report contains the results of an automated security assessment performed on ${scanResult.target}. `,
-              }),
-              new TextRun({
-                text: `A total of ${scanResult.summary.total} vulnerabilities were identified, `,
-              }),
-              new TextRun({
-                text: `including ${scanResult.summary.critical} critical and ${scanResult.summary.high} high severity issues.`,
+                text: aiSummary || `This report contains the results of an automated security assessment performed on ${scanResult.target}. ` +
+                  `A total of ${scanResult.summary.total} vulnerabilities were identified, ` +
+                  `including ${scanResult.summary.critical} critical and ${scanResult.summary.high} high severity issues.`,
               }),
             ],
           }),
@@ -167,7 +178,8 @@ async function generateWordReport(
 
 async function generateJsonReport(
   scanResult: ScanResult,
-  outputFile?: string
+  outputFile?: string,
+  aiSummary?: string
 ): Promise<string> {
   const reportsDir = await ensureReportsDirectory();
 
@@ -175,13 +187,15 @@ async function generateJsonReport(
   const filename = outputFile || `report-${timestamp}.json`;
   const filepath = path.isAbsolute(filename) ? filename : path.join(reportsDir, filename);
 
-  await fs.writeFile(filepath, JSON.stringify(scanResult, null, 2));
+  const finalResult = aiSummary ? { ...scanResult, aiSummary } : scanResult;
+  await fs.writeFile(filepath, JSON.stringify(finalResult, null, 2));
   return filepath;
 }
 
 async function generateTxtReport(
   scanResult: ScanResult,
-  outputFile?: string
+  outputFile?: string,
+  aiSummary?: string
 ): Promise<string> {
   const lines: string[] = [];
 
@@ -196,9 +210,13 @@ async function generateTxtReport(
 
   lines.push("EXECUTIVE SUMMARY");
   lines.push("-".repeat(60));
-  lines.push(
-    `Total Vulnerabilities: ${scanResult.summary.total} (${scanResult.summary.critical} Critical, ${scanResult.summary.high} High, ${scanResult.summary.medium} Medium, ${scanResult.summary.low} Low, ${scanResult.summary.info} Info)`
-  );
+  if (aiSummary) {
+    lines.push(aiSummary);
+  } else {
+    lines.push(
+      `Total Vulnerabilities: ${scanResult.summary.total} (${scanResult.summary.critical} Critical, ${scanResult.summary.high} High, ${scanResult.summary.medium} Medium, ${scanResult.summary.low} Low, ${scanResult.summary.info} Info)`
+    );
+  }
   lines.push("");
 
   lines.push("SCAN STATISTICS");

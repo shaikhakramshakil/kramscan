@@ -2,6 +2,8 @@ import puppeteer, { Browser, Page } from "puppeteer";
 import { EventEmitter } from "events";
 import { VulnerabilityDetector, ScanResult, Vulnerability } from "./vulnerability-detector";
 import { getConfig, getScanProfile, ScanProfile } from "./config";
+import { createAIClient } from "./ai-client";
+import { PayloadGenerator } from "./ai-payloads";
 import { logger } from "../utils/logger";
 import { pluginManager, PluginExecutionResult } from "../plugins";
 import { XSSPlugin, SQLInjectionPlugin, SecurityHeadersPlugin, SensitiveDataPlugin, CSRFPlugin } from "../plugins";
@@ -30,6 +32,7 @@ export interface ScanOptions {
     exclude?: string[];
     strictScope?: boolean;
     profile?: string;
+    useAiPayloads?: boolean;
 }
 
 interface RateLimiter {
@@ -70,6 +73,8 @@ export class Scanner extends EventEmitter {
     private scanErrors: ScanError[] = [];
     private pluginErrors: Map<string, Array<{ url: string; error: string }>> = new Map();
     private usePlugins: boolean = true;
+    private useAiPayloads: boolean = false;
+    private payloadGenerator: PayloadGenerator | null = null;
 
     constructor(usePlugins: boolean = true) {
         super();
@@ -87,7 +92,7 @@ export class Scanner extends EventEmitter {
             baseDelay: 1000,
             maxDelay: 10000,
         };
-        
+
         // Register default plugins
         if (usePlugins) {
             this.registerDefaultPlugins();
@@ -134,9 +139,22 @@ export class Scanner extends EventEmitter {
         // Load scan profile
         const profileName = options.profile || config.scan.defaultProfile || "balanced";
         const profile: ScanProfile | undefined = await getScanProfile(profileName);
-        
+
         this.maxPages = Math.max(1, options.maxPages ?? profile?.maxPages ?? 30);
         this.maxLinksPerPage = Math.max(1, options.maxLinksPerPage ?? profile?.maxLinksPerPage ?? 50);
+
+        // Initialize AI payload generator if requested and AI is enabled
+        this.useAiPayloads = options.useAiPayloads ?? false;
+        if (this.useAiPayloads && config.ai.enabled) {
+            try {
+                const aiClient = await createAIClient();
+                this.payloadGenerator = new PayloadGenerator(aiClient);
+                logger.info("AI contextual payload generation enabled");
+            } catch (err) {
+                logger.warn(`Failed to initialize AI payload generator: ${(err as Error).message}`);
+                this.useAiPayloads = false;
+            }
+        }
 
         const compileList = (values?: string[]): RegExp[] => {
             if (!values || values.length === 0) return [];
@@ -166,7 +184,7 @@ export class Scanner extends EventEmitter {
         this.pluginErrors.clear();
         this.rateLimiter.lastRequestTime = 0;
         this.removeAllListeners();
-        
+
         // Reset plugin manager state
         if (this.usePlugins) {
             const securityHeadersPlugin = pluginManager.getPlugin("Security Headers Analyzer") as SecurityHeadersPlugin | undefined;
@@ -240,12 +258,12 @@ export class Scanner extends EventEmitter {
     private async applyRateLimit(): Promise<void> {
         const now = Date.now();
         const timeSinceLastRequest = now - this.rateLimiter.lastRequestTime;
-        
+
         if (timeSinceLastRequest < this.rateLimiter.minInterval) {
             const delay = this.rateLimiter.minInterval - timeSinceLastRequest;
             await new Promise(resolve => setTimeout(resolve, delay));
         }
-        
+
         this.rateLimiter.lastRequestTime = Date.now();
     }
 
@@ -254,14 +272,14 @@ export class Scanner extends EventEmitter {
         context: string
     ): Promise<T> {
         let lastError: Error | null = null;
-        
+
         for (let attempt = 0; attempt <= this.retryConfig.maxRetries; attempt++) {
             try {
                 await this.applyRateLimit();
                 return await operation();
             } catch (error) {
                 lastError = error as Error;
-                
+
                 if (attempt < this.retryConfig.maxRetries) {
                     const delay = Math.min(
                         this.retryConfig.baseDelay * Math.pow(2, attempt),
@@ -272,7 +290,7 @@ export class Scanner extends EventEmitter {
                 }
             }
         }
-        
+
         throw new Error(`Failed after ${this.retryConfig.maxRetries + 1} attempts: ${lastError?.message}`);
     }
 
@@ -317,11 +335,11 @@ export class Scanner extends EventEmitter {
 
         this.emit("crawl:start", { url, depth });
         this.emit("crawl:page", { url, crawledCount: this.crawledUrls, maxPages: this.maxPages });
-        this.emit("progress", { 
-            stage: "crawling", 
-            current: this.crawledUrls, 
+        this.emit("progress", {
+            stage: "crawling",
+            current: this.crawledUrls,
             total: this.maxPages,
-            message: `Crawling: ${url}` 
+            message: `Crawling: ${url}`
         });
 
         const page = await this.createInstrumentedPage();
@@ -368,9 +386,9 @@ export class Scanner extends EventEmitter {
     }
 
     private async runPlugins(
-        page: Page, 
-        url: string, 
-        content: string, 
+        page: Page,
+        url: string,
+        content: string,
         headers: Record<string, string>,
         timeout: number
     ): Promise<void> {
@@ -380,6 +398,7 @@ export class Scanner extends EventEmitter {
             baseUrl: this.baseOrigin || url,
             timeout,
             userAgent: this.userAgent,
+            payloadGenerator: this.payloadGenerator,
         };
 
         // Analyze headers
@@ -436,6 +455,7 @@ export class Scanner extends EventEmitter {
                     baseUrl: this.baseOrigin || url,
                     timeout,
                     userAgent: this.userAgent,
+                    payloadGenerator: this.payloadGenerator,
                 };
 
                 const results = await pluginManager.testParameter(context, param, value);
@@ -477,6 +497,7 @@ export class Scanner extends EventEmitter {
                     baseUrl: this.baseOrigin || url,
                     timeout,
                     userAgent: this.userAgent,
+                    payloadGenerator: this.payloadGenerator,
                 };
 
                 const results = await pluginManager.testFormInput(context, formData);
@@ -488,9 +509,9 @@ export class Scanner extends EventEmitter {
     }
 
     private async runLegacyDetection(
-        page: Page, 
-        url: string, 
-        content: string, 
+        page: Page,
+        url: string,
+        content: string,
         headers: Record<string, string>,
         timeout: number
     ): Promise<void> {
@@ -600,7 +621,7 @@ export class Scanner extends EventEmitter {
         for (const payload of payloads) {
             try {
                 const testUrl = this.buildTestUrl(url, param, payload);
-                
+
                 await this.withRetry(
                     () => page.goto(testUrl, { waitUntil: "networkidle2", timeout }),
                     `XSS test for ${param}`
@@ -620,7 +641,7 @@ export class Scanner extends EventEmitter {
         for (const payload of errorBasedPayloads) {
             try {
                 const testUrl = this.buildTestUrl(url, param, payload);
-                
+
                 await this.withRetry(
                     () => page.goto(testUrl, { waitUntil: "networkidle2", timeout }),
                     `SQLi test for ${param}`

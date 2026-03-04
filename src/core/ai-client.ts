@@ -3,6 +3,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { Mistral } from "@mistralai/mistralai";
 import { getConfig } from "./config";
+import { ScanResult } from "./vulnerability-detector";
 
 export interface AIResponse {
     content: string;
@@ -14,20 +15,20 @@ export interface AIResponse {
 }
 
 export interface AIClient {
-    analyze(prompt: string): Promise<AIResponse>;
+    analyze(prompt: string, systemPrompt?: string): Promise<AIResponse>;
 }
 
 function getApiKeyFromEnv(provider: string): string {
-  const envVars: Record<string, string> = {
-    openai: process.env.OPENAI_API_KEY || "",
-    anthropic: process.env.ANTHROPIC_API_KEY || "",
-    gemini: process.env.GEMINI_API_KEY || "",
-    mistral: process.env.MISTRAL_API_KEY || "",
-    openrouter: process.env.OPENROUTER_API_KEY || "",
-    kimi: process.env.KIMI_API_KEY || "",
-    groq: process.env.GROQ_API_KEY || "",
-  };
-  return envVars[provider] || "";
+    const envVars: Record<string, string> = {
+        openai: process.env.OPENAI_API_KEY || "",
+        anthropic: process.env.ANTHROPIC_API_KEY || "",
+        gemini: process.env.GEMINI_API_KEY || "",
+        mistral: process.env.MISTRAL_API_KEY || "",
+        openrouter: process.env.OPENROUTER_API_KEY || "",
+        kimi: process.env.KIMI_API_KEY || "",
+        groq: process.env.GROQ_API_KEY || "",
+    };
+    return envVars[provider] || "";
 }
 
 export async function createAIClient(): Promise<AIClient> {
@@ -76,13 +77,13 @@ class OpenAIClient implements AIClient {
         this.model = model;
     }
 
-    async analyze(prompt: string): Promise<AIResponse> {
+    async analyze(prompt: string, systemPrompt?: string): Promise<AIResponse> {
         const response = await this.client.chat.completions.create({
             model: this.model,
             messages: [
                 {
                     role: "system",
-                    content:
+                    content: systemPrompt ||
                         "You are a security expert analyzing web application vulnerabilities. Provide detailed, actionable insights.",
                 },
                 { role: "user", content: prompt },
@@ -111,7 +112,7 @@ class AnthropicClient implements AIClient {
         this.model = model;
     }
 
-    async analyze(prompt: string): Promise<AIResponse> {
+    async analyze(prompt: string, systemPrompt?: string): Promise<AIResponse> {
         const response = await this.client.messages.create({
             model: this.model,
             max_tokens: 4096,
@@ -121,7 +122,7 @@ class AnthropicClient implements AIClient {
                     content: prompt,
                 },
             ],
-            system:
+            system: systemPrompt ||
                 "You are a security expert analyzing web application vulnerabilities. Provide detailed, actionable insights.",
         });
 
@@ -148,11 +149,11 @@ class GeminiClient implements AIClient {
         this.model = model;
     }
 
-    async analyze(prompt: string): Promise<AIResponse> {
+    async analyze(prompt: string, systemPrompt?: string): Promise<AIResponse> {
         const generativeModel = this.client.getGenerativeModel({ model: this.model });
 
         const result = await generativeModel.generateContent([
-            "You are a security expert analyzing web application vulnerabilities. Provide detailed, actionable insights.",
+            systemPrompt || "You are a security expert analyzing web application vulnerabilities. Provide detailed, actionable insights.",
             prompt
         ]);
 
@@ -182,13 +183,13 @@ class OpenRouterClient implements AIClient {
         this.model = model;
     }
 
-    async analyze(prompt: string): Promise<AIResponse> {
+    async analyze(prompt: string, systemPrompt?: string): Promise<AIResponse> {
         const response = await this.client.chat.completions.create({
             model: this.model,
             messages: [
                 {
                     role: "system",
-                    content: "You are a security expert analyzing web application vulnerabilities. Provide detailed, actionable insights.",
+                    content: systemPrompt || "You are a security expert analyzing web application vulnerabilities. Provide detailed, actionable insights.",
                 },
                 { role: "user", content: prompt },
             ],
@@ -216,13 +217,13 @@ class MistralClient implements AIClient {
         this.model = model;
     }
 
-    async analyze(prompt: string): Promise<AIResponse> {
+    async analyze(prompt: string, systemPrompt?: string): Promise<AIResponse> {
         const response = await this.client.chat.complete({
             model: this.model,
             messages: [
                 {
                     role: "system",
-                    content: "You are a security expert analyzing web application vulnerabilities. Provide detailed, actionable insights.",
+                    content: systemPrompt || "You are a security expert analyzing web application vulnerabilities. Provide detailed, actionable insights.",
                 },
                 { role: "user", content: prompt },
             ],
@@ -255,13 +256,13 @@ class KimiClient implements AIClient {
         this.model = model;
     }
 
-    async analyze(prompt: string): Promise<AIResponse> {
+    async analyze(prompt: string, systemPrompt?: string): Promise<AIResponse> {
         const response = await this.client.chat.completions.create({
             model: this.model,
             messages: [
                 {
                     role: "system",
-                    content: "You are a security expert analyzing web application vulnerabilities. Provide detailed, actionable insights.",
+                    content: systemPrompt || "You are a security expert analyzing web application vulnerabilities. Provide detailed, actionable insights.",
                 },
                 { role: "user", content: prompt },
             ],
@@ -292,13 +293,13 @@ class GroqClient implements AIClient {
         this.model = model;
     }
 
-    async analyze(prompt: string): Promise<AIResponse> {
+    async analyze(prompt: string, systemPrompt?: string): Promise<AIResponse> {
         const response = await this.client.chat.completions.create({
             model: this.model,
             messages: [
                 {
                     role: "system",
-                    content: "You are a security expert analyzing web application vulnerabilities. Provide detailed, actionable insights.",
+                    content: systemPrompt || "You are a security expert analyzing web application vulnerabilities. Provide detailed, actionable insights.",
                 },
                 { role: "user", content: prompt },
             ],
@@ -315,4 +316,39 @@ class GroqClient implements AIClient {
             },
         };
     }
+}
+
+/**
+ * Generates a high-level executive summary of the scan results using AI.
+ */
+export async function generateExecutiveSummary(client: AIClient, result: ScanResult): Promise<string> {
+    const vulnSummary = result.vulnerabilities.map(v =>
+        `- [${v.severity.toUpperCase()}] ${v.title} on ${v.url}`
+    ).join("\n");
+
+    const prompt = `
+Please provide a professional executive summary for a web security scan.
+
+Target: ${result.target}
+Scan Date: ${result.timestamp}
+Total Vulnerabilities: ${result.summary.total}
+Critical: ${result.summary.critical}
+High: ${result.summary.high}
+Medium: ${result.summary.medium}
+Low: ${result.summary.low}
+
+Detailed Findings:
+${vulnSummary}
+
+The summary should:
+1. Briefly state the overall security posture.
+2. Highlight the most critical risks.
+3. Provide high-level recommendations for management.
+4. Be concise (max 3-4 paragraphs).
+`;
+
+    const systemPrompt = "You are a senior cybersecurity consultant writing for a non-technical executive audience. Focus on business risk and impact.";
+
+    const response = await client.analyze(prompt, systemPrompt);
+    return response.content;
 }

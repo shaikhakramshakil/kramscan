@@ -12,6 +12,7 @@ import {
   AnalyzeFindingsSkill,
   GenerateReportSkill,
   HealthCheckSkill,
+  VerifyFindingSkill,
 } from "../agent";
 import { logger } from "../utils/logger";
 import * as readline from "readline";
@@ -29,6 +30,7 @@ export function registerAgentCommand(program: Command): void {
       skillRegistry.register(new AnalyzeFindingsSkill());
       skillRegistry.register(new GenerateReportSkill());
       skillRegistry.register(new HealthCheckSkill());
+      skillRegistry.register(new VerifyFindingSkill());
 
       // Initialize orchestrator
       const orchestrator = new AgentOrchestrator(skillRegistry, {
@@ -215,8 +217,8 @@ function printAvailableSkills(orchestrator: AgentOrchestrator): void {
       skill.risk === "high"
         ? chalk.red
         : skill.risk === "medium"
-        ? chalk.yellow
-        : chalk.green;
+          ? chalk.yellow
+          : chalk.green;
 
     console.log(chalk.bold.white(`  ${skill.name}`));
     console.log(chalk.gray(`    ${skill.description}`));

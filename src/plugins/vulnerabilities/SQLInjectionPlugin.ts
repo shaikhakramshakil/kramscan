@@ -4,7 +4,7 @@ export class SQLInjectionPlugin extends BaseVulnerabilityPlugin {
   readonly name = "SQL Injection Detector";
   readonly type = "sqli" as const;
   readonly description = "Detects SQL Injection vulnerabilities";
-  
+
   private readonly errorBasedPayloads = [
     "'",
     "1' OR '1'='1",
@@ -13,13 +13,26 @@ export class SQLInjectionPlugin extends BaseVulnerabilityPlugin {
     "' UNION SELECT 1--",
     "1' AND '1'='1",
   ];
-  
+
   private readonly timeBasedPayloads = [
     "' AND SLEEP(5)--",
     "1' AND SLEEP(5)--",
     "'; WAITFOR DELAY '00:00:05'--",
   ];
-  
+
+  private async getErrorPayloads(context: PluginContext, param: string): Promise<string[]> {
+    if (context.payloadGenerator) {
+      const aiPayloads = await context.payloadGenerator.generatePayloads("sqli", {
+        parameterName: param,
+        url: context.url,
+      });
+      if (aiPayloads.length > 0) {
+        return [...aiPayloads, ...this.errorBasedPayloads];
+      }
+    }
+    return this.errorBasedPayloads;
+  }
+
   private readonly sqlErrors = [
     "SQL syntax",
     "mysql_fetch",
@@ -39,21 +52,22 @@ export class SQLInjectionPlugin extends BaseVulnerabilityPlugin {
     "Warning: pg_",
     "Syntax error",
   ];
-  
+
   async testParameter(context: PluginContext, param: string, _value: string) {
     // Test for error-based SQL injection
-    for (const payload of this.errorBasedPayloads) {
+    const errorPayloads = await this.getErrorPayloads(context, param);
+    for (const payload of errorPayloads) {
       try {
         const url = new URL(context.url);
         url.searchParams.set(param, payload);
-        
-        await context.page.goto(url.toString(), { 
-          waitUntil: "networkidle2", 
-          timeout: context.timeout 
+
+        await context.page.goto(url.toString(), {
+          waitUntil: "networkidle2",
+          timeout: context.timeout
         });
-        
+
         const content = await context.page.content();
-        
+
         for (const error of this.sqlErrors) {
           if (content.includes(error)) {
             return this.success(
@@ -73,32 +87,32 @@ export class SQLInjectionPlugin extends BaseVulnerabilityPlugin {
         return this.failure((error as Error).message);
       }
     }
-    
+
     // Test for time-based blind SQL injection
     let baselineTime = 0;
     try {
       const baselineStart = Date.now();
-      await context.page.goto(context.url, { 
-        waitUntil: "networkidle2", 
-        timeout: context.timeout 
+      await context.page.goto(context.url, {
+        waitUntil: "networkidle2",
+        timeout: context.timeout
       });
       baselineTime = Date.now() - baselineStart;
     } catch (error) {
       return this.failure((error as Error).message);
     }
-    
+
     for (const payload of this.timeBasedPayloads) {
       try {
         const url = new URL(context.url);
         url.searchParams.set(param, payload);
-        
+
         const startTime = Date.now();
-        await context.page.goto(url.toString(), { 
-          waitUntil: "networkidle2", 
-          timeout: context.timeout 
+        await context.page.goto(url.toString(), {
+          waitUntil: "networkidle2",
+          timeout: context.timeout
         });
         const testTime = Date.now() - startTime;
-        
+
         if (testTime > baselineTime + 3000) {
           return this.success(
             this.createVulnerability(
@@ -116,7 +130,7 @@ export class SQLInjectionPlugin extends BaseVulnerabilityPlugin {
         return this.failure((error as Error).message);
       }
     }
-    
+
     return this.failure();
   }
 }
