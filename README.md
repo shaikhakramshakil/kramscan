@@ -42,8 +42,10 @@ Web security is complex and often fragmented. Developers rely on multiple disjoi
 ## ✨ Key Features
 | Feature | Description |
 | :--- | :--- |
-| 🔍 **Automated Vulnerability Engine** | Detects XSS, SQL Injection, CSRF, insecure headers, and more using Puppeteer-powered crawling. |
-| 🔌 **Modular Plugin System** | Extensible architecture for custom vulnerability detection plugins. Built-in plugins for common vulnerabilities. |
+| 🔍 **Automated Vulnerability Engine** | Detects XSS, SQL Injection, CSRF, insecure headers, CORS misconfigs, open redirects, and more. |
+| 🔌 **10 Built-in Security Plugins** | CORS, debug endpoints, directory traversal, cookie auditing, open redirects, sensitive data, and more. |
+| 🛠️ **Dev Mode (Watch Scanner)** | Watch your localhost for file changes and auto re-scan with diff reports (new vs resolved vulns). |
+| 🚧 **CI/CD Security Gate** | `kramscan gate` exits with code 1 if vulnerabilities exceed your threshold. Plug into any pipeline. |
 | 🤖 **Interactive AI Agent** | A conversational security assistant with **Autonomous Verification** skills to confirm findings live. |
 | 🧠 **Multi-Provider AI Analysis** | Supports OpenAI, Anthropic, Google Gemini, Mistral, OpenRouter, and more for results auditing. |
 | 📝 **AI Executive Summaries** | Automatically generates business-oriented summaries for Word, JSON, and TXT reports. |
@@ -86,15 +88,20 @@ KramScan now features a modular plugin system that makes extending vulnerability
 
 ```
 src/plugins/
-├── types.ts              # Base interfaces and types
-├── PluginManager.ts      # Plugin orchestration
-├── index.ts             # Plugin exports
-└── vulnerabilities/     # Built-in plugins
-    ├── XSSPlugin.ts
-    ├── SQLInjectionPlugin.ts
-    ├── SecurityHeadersPlugin.ts
-    ├── SensitiveDataPlugin.ts
-    └── CSRFPlugin.ts
+├── types.ts                        # Base interfaces and types
+├── PluginManager.ts                # Plugin orchestration
+├── index.ts                        # Plugin exports
+└── vulnerabilities/                # Built-in plugins
+    ├── XSSPlugin.ts                # Cross-Site Scripting
+    ├── SQLInjectionPlugin.ts       # SQL Injection
+    ├── SecurityHeadersPlugin.ts    # Missing security headers
+    ├── SensitiveDataPlugin.ts      # Exposed secrets & API keys
+    ├── CSRFPlugin.ts               # Cross-Site Request Forgery
+    ├── CORSAnalyzerPlugin.ts       # CORS misconfiguration
+    ├── DebugEndpointPlugin.ts      # Exposed debug/dev endpoints
+    ├── DirectoryTraversalPlugin.ts # Path traversal / LFI
+    ├── CookieSecurityPlugin.ts     # Insecure cookie flags
+    └── OpenRedirectPlugin.ts       # Open redirect detection
 ```
 
 **Creating a custom plugin:**
@@ -229,6 +236,8 @@ kramscan scan https://example.com
 | :--- | :--- | :---: |
 | `kramscan` | Launch the interactive dashboard menu with smart argument prompting. | ✅ Stable |
 | `kramscan scan <url>` | Run a comprehensive vulnerability scan with post-scan prompts. | ✅ Stable |
+| `kramscan dev [url]` | Watch-mode localhost scanner with diff reports and desktop notifications. | ✅ New |
+| `kramscan gate <url>` | CI/CD security quality gate — exits with code 1 on threshold breach. | ✅ New |
 | `kramscan agent` | Start the AI security assistant with autonomous verification skills. | ✅ Stable |
 | `kramscan analyze` | AI-powered analysis with proactive onboarding redirection. | ✅ Stable |
 | `kramscan report` | Generate professional reports with optional AI executive summaries. | ✅ Stable |
@@ -237,6 +246,50 @@ kramscan scan https://example.com
 | `kramscan config` | View and edit current configuration with robust schema defaults. | ✅ Stable |
 | `kramscan scans` | List and inspect recent scans from the persistent index. | ✅ Stable |
 | `kramscan ai` | AI helpers (model listing and connectivity test). | ✅ Stable |
+
+<br />
+
+### 🛠️ Dev Mode — Localhost Watch Scanner
+
+Scan your local dev server continuously. KramScan watches for file changes and **auto re-scans**, showing a diff of new vs. resolved vulnerabilities:
+
+```bash
+# Watch-mode with port shorthand
+kramscan dev --port 3000
+
+# Full URL with notifications
+kramscan dev http://localhost:3000 --watch-dir ./src --notify
+
+# Single scan (no watching)
+kramscan dev http://localhost:8080 --no-watch --fail-on high
+```
+
+**How it works:**
+1. Probes your server until it's ready (auto-detects Express, Next.js, Django, etc.)
+2. Runs an initial security scan
+3. Watches `--watch-dir` for file changes (debounced)
+4. Re-scans and shows only **new** and **resolved** vulnerabilities
+
+### 🚧 CI/CD Security Gate
+
+Block deployments with vulnerabilities above your threshold:
+
+```bash
+# Fail if any high+ vulnerabilities found
+kramscan gate http://localhost:3000 --fail-on high
+
+# JSON output for pipeline processing
+kramscan gate $APP_URL --fail-on medium --json
+
+# Allow up to 3 low-severity findings
+kramscan gate http://staging.example.com --fail-on low --max-vulns 3
+```
+
+**Pipeline example (GitHub Actions):**
+```yaml
+- name: Security Gate
+  run: npx kramscan gate http://localhost:3000 --fail-on high
+```
 
 <br />
 
@@ -344,7 +397,9 @@ Agent: Scan complete! Found 2 High severity issues.
 - [x] **AI Executive Summaries** ✅
 - [x] **Autonomous Verification Agent** ✅
 - [x] **Smarter Interactive Flows** ✅
-- [ ] CI/CD integration (GitHub Actions, GitLab CI)
+- [x] **CORS, Debug Endpoints, Directory Traversal, Cookie & Redirect Plugins** ✅
+- [x] **Dev Mode Watch Scanner (`kramscan dev`)** ✅
+- [x] **CI/CD Security Gate (`kramscan gate`)** ✅
 - [ ] Web-based dashboard UI
 - [ ] SARIF export format
 - [ ] OWASP ZAP integration
