@@ -6,7 +6,7 @@ import { createAIClient } from "./ai-client";
 import { PayloadGenerator } from "./ai-payloads";
 import { logger } from "../utils/logger";
 import { pluginManager, PluginExecutionResult } from "../plugins";
-import { XSSPlugin, SQLInjectionPlugin, SecurityHeadersPlugin, SensitiveDataPlugin, CSRFPlugin } from "../plugins";
+import { XSSPlugin, SQLInjectionPlugin, SecurityHeadersPlugin, SensitiveDataPlugin, CSRFPlugin, CORSAnalyzerPlugin, DebugEndpointPlugin, DirectoryTraversalPlugin, CookieSecurityPlugin, OpenRedirectPlugin } from "../plugins";
 
 export interface ScanEventMap {
     "scan:start": { target: string; options: ScanOptions };
@@ -105,6 +105,11 @@ export class Scanner extends EventEmitter {
         pluginManager.register(new SecurityHeadersPlugin());
         pluginManager.register(new SensitiveDataPlugin());
         pluginManager.register(new CSRFPlugin());
+        pluginManager.register(new CORSAnalyzerPlugin());
+        pluginManager.register(new DebugEndpointPlugin());
+        pluginManager.register(new DirectoryTraversalPlugin());
+        pluginManager.register(new CookieSecurityPlugin());
+        pluginManager.register(new OpenRedirectPlugin());
     }
 
     // Type-safe event emitter methods
