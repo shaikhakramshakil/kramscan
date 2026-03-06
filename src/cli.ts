@@ -9,6 +9,8 @@ import { registerDoctorCommand } from "./commands/doctor";
 import { registerAgentCommand } from "./commands/agent";
 import { registerScansCommand } from "./commands/scans";
 import { registerAiCommand } from "./commands/ai";
+import { registerDevCommand } from "./commands/dev";
+import { registerGateCommand } from "./commands/gate";
 import { isDebugEnabled } from "./core/config";
 import { printBanner, printInfo, theme, CLI_VERSION } from "./utils/theme";
 
@@ -42,6 +44,8 @@ const menuChoices: MenuChoice[] = [
   { label: "Agent", value: "agent", description: "AI-powered interactive security assistant", icon: "🤖", status: "active" },
   { label: "Onboard", value: "onboard", description: "First-time setup wizard", icon: "⚡", status: "active" },
   { label: "Scan", value: "scan", description: "Scan a target URL for vulnerabilities", icon: "🔍", status: "active" },
+  { label: "Dev", value: "dev", description: "Watch-mode scanning for localhost dev servers", icon: "🛠️", status: "active" },
+  { label: "Gate", value: "gate", description: "CI/CD security quality gate", icon: "🚧", status: "active" },
   { label: "Analyze", value: "analyze", description: "Deep AI analysis of scan results", icon: "🧠", status: "active" },
   { label: "Report", value: "report", description: "Generate a professional report", icon: "📄", status: "active" },
   { label: "Config", value: "config", description: "View or edit your configuration", icon: "⚙️", status: "active" },
@@ -209,6 +213,8 @@ function createProgram(): Command {
   registerAgentCommand(program);
   registerScansCommand(program);
   registerAiCommand(program);
+  registerDevCommand(program);
+  registerGateCommand(program);
 
   // Version subcommand with detailed environment info
   program
