@@ -400,7 +400,6 @@ Agent: Scan complete! Found 2 High severity issues.
 - [x] **CORS, Debug Endpoints, Directory Traversal, Cookie & Redirect Plugins** ✅
 - [x] **Dev Mode Watch Scanner (`kramscan dev`)** ✅
 - [x] **CI/CD Security Gate (`kramscan gate`)** ✅
-- [ ] Web-based dashboard UI
 - [ ] SARIF export format
 - [ ] OWASP ZAP integration
 
