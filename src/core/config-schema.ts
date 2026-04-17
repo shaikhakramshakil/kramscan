@@ -41,7 +41,7 @@ export const ConfigSchema = z.object({
   scan: z.object({
     defaultTimeout: z.number().int().min(1000).default(30000),
     maxThreads: z.number().int().min(1).max(20).default(5),
-    userAgent: z.string().default("KramScan/0.1.1"),
+    userAgent: z.string().default("KramScan/0.2.0"),
     followRedirects: z.boolean().default(true),
     verifySSL: z.boolean().default(true),
     rateLimitPerSecond: z.number().int().min(1).max(100).default(5),

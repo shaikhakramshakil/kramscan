@@ -17,6 +17,7 @@ export interface ScanIndexEntry {
     low: number;
     info: number;
   };
+  score?: number;
 }
 
 function getIndexPath(): string {

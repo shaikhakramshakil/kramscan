@@ -69,7 +69,7 @@ export class Scanner extends EventEmitter {
     private maxLinksPerPage = 50;
     private includePatterns: RegExp[] = [];
     private excludePatterns: RegExp[] = [];
-    private userAgent = "KramScan/0.1.0";
+    private userAgent = "KramScan/0.2.0";
     private scanErrors: ScanError[] = [];
     private pluginErrors: Map<string, Array<{ url: string; error: string }>> = new Map();
     private usePlugins: boolean = true;
@@ -254,6 +254,7 @@ export class Scanner extends EventEmitter {
                 testedForms: this.testedForms,
                 requestsMade: this.requestsMade,
             },
+            score: this.detector.calculateScore(),
         };
 
         this.emit("scan:complete", { result });

@@ -210,6 +210,7 @@ export function registerScanCommand(program: Command): void {
                     metadata: result.metadata,
                     summary: result.summary,
                     vulnerabilities: result.vulnerabilities,
+                    score: result.score,
                     filepath,
                     pdfPath,
                 });

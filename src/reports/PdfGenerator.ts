@@ -27,7 +27,16 @@ export interface HtmlReportOptions {
     minify?: boolean;
 }
 
-function escapeHtml(text: string): string { return text; }
+function escapeHtml(text: string): string {
+    if (!text) return "";
+    return text
+        .toString()
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+}
 
 function sanitizeFilenamePart(value: string): string {
     return value
@@ -301,6 +310,21 @@ function buildPdfHtml(data: PdfReportData): string {
     </div>
 
     <div class="sub">Crawled URLs: <span class="mono">${scanResult.metadata.crawledUrls}</span> | Forms tested: <span class="mono">${scanResult.metadata.testedForms}</span> | Requests: <span class="mono">${scanResult.metadata.requestsMade}</span> | Duration: <span class="mono">${(scanResult.duration / 1000).toFixed(2)}s</span></div>
+    
+    <div style="margin-top: 20px; display: flex; align-items: center; gap: 15px; background: rgba(17,26,51,0.55); padding: 15px; border-radius: 12px; border: 1px solid var(--line);">
+        <div style="font-size: 24px; font-weight: 900; color: ${scanResult.score > 80 ? "#52c41a" : (scanResult.score > 50 ? "#faad14" : "#ff4d4f")};">
+            ${scanResult.score}/100
+        </div>
+        <div style="flex-grow: 1;">
+            <div style="font-size: 11px; text-transform: uppercase; color: var(--muted); letter-spacing: 0.5px; margin-bottom: 5px;">Security Posture</div>
+            <div style="height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px; overflow: hidden;">
+                <div style="width: ${scanResult.score}%; height: 100%; background: ${scanResult.score > 80 ? "#52c41a" : (scanResult.score > 50 ? "#faad14" : "#ff4d4f")};"></div>
+            </div>
+        </div>
+        <div style="font-size: 12px; font-weight: 700; color: var(--muted);">
+            ${scanResult.score > 80 ? "EXCELLENT" : (scanResult.score > 50 ? "FAIR" : "POOR")}
+        </div>
+    </div>
 
     <div class="cards">
       ${rows || `<div class="card"><div class="title">No vulnerabilities found</div><div class="v">The scanner did not detect issues in the tested scope.</div></div>`}

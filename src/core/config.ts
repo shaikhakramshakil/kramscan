@@ -18,7 +18,7 @@ const defaults: Config = {
     enabled: false,
   },
   scan: {
-    defaultTimeout: 60,
+    defaultTimeout: 30000,
     maxThreads: 5,
     userAgent: `KramScan/${CLI_VERSION}`,
     followRedirects: true,
@@ -35,8 +35,8 @@ const defaults: Config = {
     severityThreshold: "low",
   },
   skills: {
-    sqli: { enabled: true, timeout: 120 },
-    xss: { enabled: true, timeout: 90 },
+    sqli: { enabled: true, timeout: 120000 },
+    xss: { enabled: true, timeout: 90000 },
     headers: { enabled: true },
     csrf: { enabled: true },
     idor: { enabled: true },

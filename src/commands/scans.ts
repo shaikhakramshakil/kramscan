@@ -35,6 +35,10 @@ export function registerScansCommand(program: Command): void {
             `${entry.summary.total} total (${entry.summary.critical}C ${entry.summary.high}H ${entry.summary.medium}M ${entry.summary.low}L ${entry.summary.info}I)`
           )
         );
+        if (entry.score !== undefined) {
+          const scoreColor = entry.score > 80 ? chalk.green : (entry.score > 50 ? chalk.yellow : chalk.red);
+          console.log(chalk.gray("  Score   :"), scoreColor(`${entry.score}/100`));
+        }
         console.log("");
       }
     });

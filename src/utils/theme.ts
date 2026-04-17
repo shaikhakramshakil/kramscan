@@ -110,6 +110,7 @@ export function displayScanSummary(result: {
         low: number;
         info: number;
     };
+    score: number;
     vulnerabilities: Array<{
         severity: string;
         title: string;
@@ -119,7 +120,7 @@ export function displayScanSummary(result: {
     filepath: string;
     pdfPath?: string | null;
 }): void {
-    const { target, duration, metadata, summary, vulnerabilities, filepath, pdfPath } = result;
+    const { target, duration, metadata, summary, vulnerabilities, filepath, pdfPath, score } = result;
 
     // Scan Summary
     console.log("");
@@ -137,6 +138,14 @@ export function displayScanSummary(result: {
         theme.white("Requests Made:"),
         theme.cyan(metadata.requestsMade)
     );
+    
+    // Security Score Display
+    const scoreColor = score > 80 ? theme.success : (score > 50 ? theme.warning : theme.error);
+    const scoreLabel = score > 80 ? "EXCELLENT" : (score > 50 ? "FAIR" : "POOR");
+    
+    console.log("");
+    console.log(`  ${theme.white("Security Score:")} ${scoreColor.bold(score + "/100")} ${theme.gray(`(${scoreLabel})`)}`);
+    console.log(`  ${scoreColor("█".repeat(Math.round(score / 5)) + theme.dim("█".repeat(20 - Math.round(score / 5))))}`);
     console.log("");
 
     // Vulnerability summary
