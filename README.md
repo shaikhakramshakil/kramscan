@@ -5,6 +5,7 @@
 
   <br />
 
+  [![CI](https://img.shields.io/github/actions/workflow/status/shaikhakramshakil/kramscan/ci.yml?branch=main&style=for-the-badge&logo=github-actions&logoColor=white&label=CI)](https://github.com/shaikhakramshakil/kramscan/actions)
   [![npm version](https://img.shields.io/npm/v/kramscan?style=for-the-badge&logo=npm&logoColor=white&color=cb3837)](https://www.npmjs.com/package/kramscan)
   [![npm downloads](https://img.shields.io/npm/dm/kramscan?style=for-the-badge&logo=npm&logoColor=white&color=blue)](https://www.npmjs.com/package/kramscan)
   [![License](https://img.shields.io/github/license/shaikhakramshakil/kramscan?style=for-the-badge&logo=github&logoColor=white&color=green)](https://github.com/shaikhakramshakil/kramscan/blob/main/LICENSE)
@@ -20,7 +21,7 @@
 
   <br />
 
-  [🌐 NPM Package](https://www.npmjs.com/package/kramscan) · [📖 Documentation](#-usage) · [🐞 Report Bug](https://github.com/shaikhakramshakil/kramscan/issues)
+  [🌐 NPM Package](https://www.npmjs.com/package/kramscan) · [📖 Documentation](#-usage--commands) · [🐞 Report Bug](https://github.com/shaikhakramshakil/kramscan/issues) · [💡 Request Feature](https://github.com/shaikhakramshakil/kramscan/issues)
 
 </div>
 
@@ -29,6 +30,7 @@
 <br />
 
 ## 🚀 The Problem We Solve
+
 Web security is complex and often fragmented. Developers rely on multiple disjointed tools for scanning, manual testing, and reporting. Traditional automated scanners generate noise without context, and manual pentesting is time-consuming and expensive.
 
 **KramScan bridges this gap.** We provide a unified command-line interface that orchestrates headless browser scanning, scrapes critical security headers, leverages **Generative AI** (OpenAI, Gemini, Anthropic) for analysis, and features a **modular plugin system** for extensibility. It delivers actionable, human-readable insights alongside raw vulnerability data—all in seconds.
@@ -40,6 +42,7 @@ Web security is complex and often fragmented. Developers rely on multiple disjoi
 <br />
 
 ## ✨ Key Features
+
 | Feature | Description |
 | :--- | :--- |
 | 🔍 **Automated Vulnerability Engine** | Detects XSS, SQL Injection, CSRF, insecure headers, CORS misconfigs, open redirects, and more. |
@@ -50,7 +53,7 @@ Web security is complex and often fragmented. Developers rely on multiple disjoi
 | 🧠 **Multi-Provider AI Analysis** | Supports OpenAI, Anthropic, Google Gemini, Mistral, OpenRouter, and more for results auditing. |
 | 📝 **AI Executive Summaries** | Automatically generates business-oriented summaries for Word, JSON, and TXT reports. |
 | 📊 **Event-Driven Feedback** | Real-time progress updates with dynamic spinners and live vulnerability alerts during scanning. |
-| 📄 **Professional Reporting** | Generates detailed PDF, DOCX, TXT, and JSON reports with remediation steps and error tracking. |
+| 📄 **Professional Reporting** | Generates detailed PDF, DOCX, Markdown, TXT, and JSON reports with remediation steps and error tracking. |
 | 🌐 **Headless Browser Testing** | Renders modern SPAs (Single Page Applications) to find vulnerabilities in dynamic content. |
 | ⚡ **Smarter User Flow** | Interactive menu and post-scan "Golden Path" prompts for a guided experience. |
 | 🛡️ **Error Resilience** | Robust configuration defaults and graceful recovery if individual URLs or plugins fail. |
@@ -149,6 +152,8 @@ export class MyCustomPlugin extends BaseVulnerabilityPlugin {
 | **AI Integration** | OpenAI SDK, Google Generative AI, Anthropic SDK |
 | **Schema Validation** | Zod |
 | **Reporting** | Docx, Puppeteer (PDF), Chalk |
+| **Testing** | Jest, ts-jest |
+| **CI/CD** | GitHub Actions (lint, build, test on Node 18/20/22, security audit) |
 | **Package Manager** | NPM / Yarn / PNPM |
 
 </div>
@@ -210,6 +215,12 @@ Install KramScan globally using npm:
 npm install -g kramscan
 ```
 
+Or run directly without installing:
+
+```bash
+npx kramscan scan https://example.com
+```
+
 ### 2. First-Time Setup
 Initialize the configuration wizard to set up your AI provider and API keys:
 
@@ -222,6 +233,15 @@ Execute a full security scan on a target URL:
 
 ```bash
 kramscan scan https://example.com
+```
+
+### 4. View Results
+```bash
+# List recent scans
+kramscan scans list
+
+# View the latest scan
+kramscan scans latest
 ```
 
 <br />
@@ -380,13 +400,85 @@ Agent: Scan complete! Found 2 High severity issues.
 
 ---
 
-
+<br />
 
 ## 🔒 Security & Privacy
 - **Local Execution:** All scanning logic runs locally on your machine.
 - **API Key Safety:** AI provider API keys are stored securely in your local home directory and are never sent to our servers.
 - **Data Privacy:** Scan data is sent only to your chosen AI provider for analysis and is not stored by KramScan.
 - **Error Tracking:** Failed scan attempts are logged locally for debugging but never transmitted.
+
+<br />
+
+---
+
+<br />
+
+## 🗺️ Roadmap
+
+We're actively working on making KramScan the most comprehensive AI-powered security tool available. Here's what's coming:
+
+### 🔜 Short-term (Next 2-3 Releases)
+| Feature | Status | Description |
+| :--- | :--- | :--- |
+| **Authentication Support** | 🟡 Planned | Login-aware scanning with session cookies and OAuth token injection |
+| **OWASP ZAP Integration** | 🟡 Planned | Use ZAP as a proxy backend for deeper active scanning |
+| **HTML Report Format** | 🟡 Planned | Interactive HTML reports with filterable tables and charts |
+| **Custom Rule Engine** | 🟡 Planned | YAML-based custom rules for defining organization-specific policies |
+| **Webhook Notifications** | 🟡 Planned | Slack, Discord, and Teams alerts on scan completion |
+
+### 🔮 Mid-term (v0.5 – v1.0)
+| Feature | Status | Description |
+| :--- | :--- | :--- |
+| **API Scanning Mode** | 💡 Exploring | REST/GraphQL endpoint testing with automatic schema discovery |
+| **SARIF Output** | 💡 Exploring | Standard SARIF format for GitHub Security tab integration |
+| **Multi-Target Batch Scans** | 💡 Exploring | Scan multiple URLs from a file with parallel execution |
+| **Docker Image** | 💡 Exploring | Pre-built container for cloud/CI environments without Node.js |
+| **Plugin Marketplace** | 💡 Exploring | Community-contributed plugins with `kramscan plugin install` |
+
+### 🌟 Long-term Vision
+| Feature | Description |
+| :--- | :--- |
+| **Dashboard UI** | Web-based dashboard for managing scans, viewing trends, and team collaboration |
+| **Compliance Mapping** | Map findings to OWASP Top 10, PCI-DSS, SOC 2, and NIST frameworks |
+| **Attack Surface Discovery** | Subdomain enumeration, port scanning, and technology fingerprinting |
+| **Remediation PRs** | AI-generated pull requests that fix detected vulnerabilities |
+| **Team & Org Support** | Multi-user accounts with role-based access and shared scan history |
+
+> 💬 Have a feature request? [Open an issue](https://github.com/shaikhakramshakil/kramscan/issues) — we'd love to hear from you!
+
+<br />
+
+---
+
+<br />
+
+## 🤝 Contributing
+
+Contributions are welcome! Whether it's a bug fix, new plugin, or feature suggestion, we appreciate your help.
+
+```bash
+# Clone the repo
+git clone https://github.com/shaikhakramshakil/kramscan.git
+cd kramscan
+
+# Install dependencies
+npm install
+
+# Build the project
+npm run build
+
+# Run tests
+npm test
+
+# Run the CLI locally
+node dist/index.js
+```
+
+**Before submitting a PR:**
+1. Run `npm run lint` — ensure zero ESLint errors
+2. Run `npm test` — ensure all tests pass
+3. Add tests for new features when possible
 
 <br />
 
