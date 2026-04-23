@@ -268,6 +268,7 @@ export function registerScanCommand(program: Command): void {
                             choices: [
                                 { name: "🧠  Analyze findings with AI", value: "analyze" },
                                 { name: "📄  Generate a professional report", value: "report" },
+                                { name: "🤖  Generate AI-ready Markdown report for fixing issues", value: "markdown" },
                                 { name: "👋  Exit to main menu", value: "exit" }
                             ]
                         }
@@ -283,6 +284,11 @@ export function registerScanCommand(program: Command): void {
                         const reportProgram = new Command();
                         registerReportCommand(reportProgram);
                         await reportProgram.parseAsync(["node", "kramscan", "report", filepath]);
+                    } else if (nextAction === "markdown") {
+                        const { registerReportCommand } = await import("./report");
+                        const reportProgram = new Command();
+                        registerReportCommand(reportProgram);
+                        await reportProgram.parseAsync(["node", "kramscan", "report", filepath, "-f", "markdown"]);
                     }
                 }
 

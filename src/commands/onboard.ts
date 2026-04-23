@@ -165,8 +165,8 @@ export function registerOnboardCommand(program: Command): void {
           type: "list",
           name: "reportFormat",
           message: "Default report format",
-          choices: ["word", "txt", "json"],
-          default: config.report.defaultFormat,
+          choices: ["markdown", "word", "txt", "json"],
+          default: config.report.defaultFormat || "markdown",
         },
         {
           type: "confirm",
