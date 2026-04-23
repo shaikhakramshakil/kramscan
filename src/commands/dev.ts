@@ -1,5 +1,5 @@
 import { Command } from "commander";
-import { Scanner, ScanOptions, ScanError } from "../core/scanner";
+import { Scanner, ScanOptions } from "../core/scanner";
 import { probeServer, isLocalhost } from "../core/server-probe";
 import { diffScanResults, ScanDiff } from "../core/diff-engine";
 import { displayScanSummary, theme } from "../utils/theme";

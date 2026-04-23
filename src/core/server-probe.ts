@@ -1,6 +1,6 @@
 import http from "http";
 import https from "https";
-import { logger } from "../utils/logger";
+
 
 export interface ProbeResult {
     reachable: boolean;
@@ -21,7 +21,6 @@ export async function probeServer(
     const { timeout = 30000, interval = 1000, maxAttempts = 20 } = options;
     const startTime = Date.now();
     let attempts = 0;
-    let lastError: string | null = null;
 
     while (attempts < maxAttempts && Date.now() - startTime < timeout) {
         attempts++;
@@ -31,9 +30,8 @@ export async function probeServer(
             if (result.reachable) {
                 return result;
             }
-            lastError = `HTTP ${result.statusCode}`;
         } catch (err) {
-            lastError = (err as Error).message;
+            // error logged silently
         }
 
         // Exponential backoff with cap

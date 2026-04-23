@@ -20,7 +20,6 @@ export class CORSAnalyzerPlugin extends BaseVulnerabilityPlugin {
         const acao = headers["access-control-allow-origin"];
         const acac = headers["access-control-allow-credentials"];
         const acam = headers["access-control-allow-methods"];
-        const acah = headers["access-control-allow-headers"];
 
         // Check for wildcard origin
         if (acao === "*") {

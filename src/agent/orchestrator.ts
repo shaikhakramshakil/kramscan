@@ -12,7 +12,6 @@ import {
   DEFAULT_AGENT_CONFIG,
   AgentResponse,
   ToolCall,
-  ConversationMessage,
 } from "./types";
 import { createAIClient, AIClient } from "../core/ai-client";
 import { logger } from "../utils/logger";

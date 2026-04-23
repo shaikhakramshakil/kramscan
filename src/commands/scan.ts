@@ -1,14 +1,14 @@
 import { Command } from "commander";
-import { Scanner, ScanOptions, ScanError } from "../core/scanner";
+import { Scanner, ScanOptions } from "../core/scanner";
 import { addScanToIndex } from "../core/scan-index";
 import { ensureScansDirectory } from "../core/scan-storage";
-import { scanProfiles, ScanProfile } from "../core/config";
+import { scanProfiles } from "../core/config";
 import { pdfGenerator, PdfReportData } from "../reports/PdfGenerator";
 import { displayScanSummary, theme } from "../utils/theme";
 import { logger } from "../utils/logger";
 import fs from "fs/promises";
 import path from "path";
-import chalk from "chalk";
+
 
 export function registerScanCommand(program: Command): void {
     program
@@ -93,23 +93,19 @@ export function registerScanCommand(program: Command): void {
 
                 const scanner = new Scanner(options.plugins !== false);
 
-                // Set up event listeners for progress feedback
-                let currentStage = "initializing";
+
                 let vulnerabilitiesFound = 0;
 
                 scanner.on("scan:start", () => {
                     if (spinner) spinner.text = `Starting scan of ${url}...`;
-                    currentStage = "scanning";
                 });
 
                 scanner.on("crawl:page", (data) => {
                     if (spinner) spinner.text = `Crawling: ${data.url} (${data.crawledCount}/${data.maxPages})`;
-                    currentStage = "crawling";
                 });
 
                 scanner.on("form:test", (data) => {
                     if (spinner) spinner.text = `Testing forms on ${data.url} (${data.formCount} forms)...`;
-                    currentStage = "testing forms";
                 });
 
                 scanner.on("vuln:found", (data) => {

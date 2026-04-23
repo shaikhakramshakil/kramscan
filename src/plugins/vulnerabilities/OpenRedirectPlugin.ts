@@ -21,7 +21,7 @@ export class OpenRedirectPlugin extends BaseVulnerabilityPlugin {
         "https:evil.com",
     ];
 
-    async analyzeContent(context: PluginContext, content: string): Promise<Vulnerability[]> {
+    async analyzeContent(context: PluginContext, _content: string): Promise<Vulnerability[]> {
         const vulnerabilities: Vulnerability[] = [];
         const url = new URL(context.url);
 

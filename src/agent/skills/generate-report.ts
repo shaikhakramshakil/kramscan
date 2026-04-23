@@ -215,11 +215,6 @@ export class GenerateReportSkill implements AgentSkill {
       Paragraph,
       TextRun,
       HeadingLevel,
-      Table,
-      TableCell,
-      TableRow,
-      WidthType,
-      BorderStyle,
     } = docx;
 
     const findings = scanData.findings || [];

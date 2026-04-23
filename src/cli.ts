@@ -85,7 +85,7 @@ async function showInteractiveMenu(): Promise<void> {
     return;
   }
 
-  let args: string[] = [action];
+  const args: string[] = [action];
 
   // Specific handling for commands that need input
   if (action === "scan") {
@@ -161,6 +161,7 @@ async function showInteractiveMenu(): Promise<void> {
   }
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 async function showDirectCommandInput(): Promise<void> {
   printBanner();
   printInfo();

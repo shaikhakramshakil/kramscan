@@ -120,7 +120,7 @@ async function checkPuppeteer(): Promise<HealthCheck> {
 
 async function checkConfig(): Promise<HealthCheck> {
     try {
-        const config = await getConfig();
+        await getConfig();
         return {
             name: "Configuration",
             status: "pass",

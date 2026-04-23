@@ -1,4 +1,3 @@
-import { Page } from "puppeteer";
 import { VulnerabilityPlugin, PluginContext, FormData } from "./types";
 import { Vulnerability } from "../core/vulnerability-detector";
 

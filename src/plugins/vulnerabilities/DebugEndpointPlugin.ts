@@ -182,7 +182,7 @@ export class DebugEndpointPlugin extends BaseVulnerabilityPlugin {
             },
         ];
 
-    async analyzeContent(context: PluginContext, content: string): Promise<Vulnerability[]> {
+    async analyzeContent(context: PluginContext, _content: string): Promise<Vulnerability[]> {
         const vulnerabilities: Vulnerability[] = [];
         const baseUrl = new URL(context.url).origin;
 

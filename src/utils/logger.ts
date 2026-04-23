@@ -67,10 +67,10 @@ function outputLog(entry: LogEntry): void {
   if (isJsonOutput()) {
     console.log(JSON.stringify(entry));
   } else {
-    const { timestamp, level, message, ...rest } = entry;
+    const { message, context: ctx } = entry;
     let output = message;
-    if (process.env.LOG_INCLUDE_CONTEXT === "true" && Object.keys(rest).length > 0) {
-      output += ` ${JSON.stringify(rest)}`;
+    if (process.env.LOG_INCLUDE_CONTEXT === "true" && ctx && Object.keys(ctx).length > 0) {
+      output += ` ${JSON.stringify(ctx)}`;
     }
     console.log(output);
   }

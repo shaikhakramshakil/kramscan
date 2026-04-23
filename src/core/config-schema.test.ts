@@ -1,4 +1,4 @@
-import { validateConfig, validateScanProfile, ConfigSchema } from "./config-schema";
+import { validateConfig, validateScanProfile } from "./config-schema";
 
 describe("config-schema", () => {
     // ─── validateConfig ────────────────────────────────────────────

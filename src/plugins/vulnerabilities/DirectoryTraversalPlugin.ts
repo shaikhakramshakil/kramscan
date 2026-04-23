@@ -1,5 +1,5 @@
 import { BaseVulnerabilityPlugin, PluginContext, VulnerabilityTestResult } from "../types";
-import { Vulnerability } from "../../core/vulnerability-detector";
+
 
 export class DirectoryTraversalPlugin extends BaseVulnerabilityPlugin {
     readonly name = "Directory Traversal / LFI Detector";
@@ -74,7 +74,7 @@ export class DirectoryTraversalPlugin extends BaseVulnerabilityPlugin {
     async testParameter(
         context: PluginContext,
         param: string,
-        value: string
+        _value: string
     ): Promise<VulnerabilityTestResult> {
         for (const { payload, markers, os } of this.payloads) {
             try {

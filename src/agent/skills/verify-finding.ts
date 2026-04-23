@@ -55,7 +55,7 @@ export class VerifyFindingSkill implements AgentSkill {
             const vulnType = (finding.metadata?.type as any) || (finding.title.toLowerCase().includes("sql") ? "sqli" : "xss");
 
             // Generate non-destructive verification payloads
-            const payloads = await payloadGenerator.generatePayloads(vulnType, {
+            await payloadGenerator.generatePayloads(vulnType, {
                 parameterName: (finding.metadata?.parameter as string) || "verify",
                 url: finding.metadata?.url as string || context.currentTarget || "",
             });

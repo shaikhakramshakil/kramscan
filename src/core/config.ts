@@ -1,7 +1,7 @@
 import * as fs from "fs";
 import * as path from "path";
 import * as os from "os";
-import { Config, ConfigSchema, defaultScanProfiles, validateConfig, ScanProfile } from "./config-schema";
+import { Config, defaultScanProfiles, validateConfig, ScanProfile } from "./config-schema";
 import { CLI_VERSION } from "../utils/theme";
 
 export type { AiProviderName, ReportFormat, Config } from "./config-schema";

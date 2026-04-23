@@ -4,7 +4,7 @@
  */
 
 import { AgentSkill, ToolDefinition, AgentContext, SkillResult, Finding } from "../types";
-import { getConfig, Config } from "../../core/config";
+import { getConfig } from "../../core/config";
 import { logger } from "../../utils/logger";
 import * as fs from "fs";
 import * as path from "path";
@@ -42,7 +42,7 @@ export class HealthCheckSkill implements AgentSkill {
     ],
   };
 
-  validateParameters(params: Record<string, unknown>): {
+  validateParameters(_params: Record<string, unknown>): {
     valid: boolean;
     errors: string[];
   } {
@@ -52,7 +52,7 @@ export class HealthCheckSkill implements AgentSkill {
 
   async execute(
     params: Record<string, unknown>,
-    context: AgentContext
+    _context: AgentContext
   ): Promise<SkillResult> {
     const verbose = (params.verbose as boolean) ?? false;
 

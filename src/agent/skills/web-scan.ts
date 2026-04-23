@@ -140,7 +140,7 @@ export class WebScanSkill implements AgentSkill {
 
   async execute(
     params: Record<string, unknown>,
-    context: AgentContext
+    _context: AgentContext
   ): Promise<SkillResult> {
     const targetUrl = params.targetUrl as string;
     const depth = (params.depth as number) ?? 2;

@@ -40,6 +40,7 @@ function escapeHtml(text: string): string {
 
 function sanitizeFilenamePart(value: string): string {
     return value
+        // eslint-disable-next-line no-control-regex, no-useless-escape
         .replace(/[<>:"\/\\|?*\x00-\x1F]/g, "_")
         .replace(/\s+/g, "_")
         .replace(/_+/g, "_")

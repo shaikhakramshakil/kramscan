@@ -1,9 +1,9 @@
 import { Command } from "commander";
 import { Scanner, ScanOptions } from "../core/scanner";
-import { probeServer, isLocalhost } from "../core/server-probe";
+import { probeServer } from "../core/server-probe";
 import { theme } from "../utils/theme";
 import { logger } from "../utils/logger";
-import { ScanResult } from "../core/vulnerability-detector";
+
 
 export function registerGateCommand(program: Command): void {
     program
