@@ -1,4 +1,4 @@
-﻿import { Command } from "commander";
+import { Command } from "commander";
 import chalk from "chalk";
 import inquirer from "inquirer";
 import { getConfig, setConfig } from "../core/config";
@@ -117,8 +117,8 @@ export function registerConfigCommand(program: Command): void {
           type: "list",
           name: "reportFormat",
           message: "Default report format:",
-          choices: ["word", "json", "txt"],
-          default: config.report.defaultFormat,
+          choices: ["markdown", "word", "json", "txt"],
+          default: config.report.defaultFormat || "markdown",
         },
         {
           type: "number",
