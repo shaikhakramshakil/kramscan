@@ -22,7 +22,7 @@ export function registerDevCommand(program: Command): void {
         .option("--no-watch", "Run a single scan without watching (useful for CI)")
         .action(async (url: string | undefined, options) => {
             // Resolve target URL
-            const targetUrl = url || (options.port ? `http://localhost:${options.port}` : null);
+            let targetUrl = url || (options.port ? `http://localhost:${options.port}` : null);
 
             if (!targetUrl) {
                 console.log("");
@@ -31,6 +31,10 @@ export function registerDevCommand(program: Command): void {
                 console.log(theme.gray("     or: kramscan dev --port 3000"));
                 console.log("");
                 process.exit(1);
+            }
+
+            if (!/^https?:\/\//i.test(targetUrl)) {
+                targetUrl = `http://${targetUrl}`;
             }
 
             const isLocal = isLocalhost(targetUrl);

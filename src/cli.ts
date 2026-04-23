@@ -96,7 +96,8 @@ async function showInteractiveMenu(): Promise<void> {
         message: theme.cyan("Enter the URL to scan:"),
         validate: (input) => {
           try {
-            new URL(input);
+            const urlToTest = /^https?:\/\//i.test(input) ? input : `http://${input}`;
+            new URL(urlToTest);
             return true;
           } catch {
             return "Please enter a valid URL (e.g., https://example.com)";

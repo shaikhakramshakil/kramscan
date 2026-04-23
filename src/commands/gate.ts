@@ -15,6 +15,9 @@ export function registerGateCommand(program: Command): void {
         .option("--timeout <ms>", "Maximum scan duration", "60000")
         .option("--json", "Output results as JSON")
         .action(async (url: string, options) => {
+            if (!/^https?:\/\//i.test(url)) {
+                url = `http://${url}`;
+            }
             const jsonMode = options.json === true;
 
             if (!jsonMode) {

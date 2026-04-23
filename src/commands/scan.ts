@@ -36,6 +36,10 @@ export function registerScanCommand(program: Command): void {
                 console.log("");
             }
 
+            if (!/^https?:\/\//i.test(url)) {
+                url = `http://${url}`;
+            }
+
             // Validate URL
             try {
                 new URL(url);
