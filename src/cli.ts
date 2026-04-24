@@ -11,6 +11,7 @@ import { registerScansCommand } from "./commands/scans";
 import { registerAiCommand } from "./commands/ai";
 import { registerDevCommand } from "./commands/dev";
 import { registerGateCommand } from "./commands/gate";
+import { registerInitCommand } from "./commands/init";
 import { isDebugEnabled } from "./core/config";
 import { printBanner, printInfo, theme, CLI_VERSION } from "./utils/theme";
 
@@ -43,6 +44,7 @@ interface MenuChoice {
 const menuChoices: MenuChoice[] = [
   { label: "Agent", value: "agent", description: "AI-powered interactive security assistant", icon: "🤖", status: "active" },
   { label: "Onboard", value: "onboard", description: "First-time setup wizard", icon: "⚡", status: "active" },
+  { label: "Init", value: "init", description: "Generate .kramscanrc for this project", icon: "📁", status: "active" },
   { label: "Scan", value: "scan", description: "Scan a target URL for vulnerabilities", icon: "🔍", status: "active" },
   { label: "Dev", value: "dev", description: "Watch-mode scanning for localhost dev servers", icon: "🛠️", status: "active" },
   { label: "Gate", value: "gate", description: "CI/CD security quality gate", icon: "🚧", status: "active" },
@@ -217,6 +219,7 @@ function createProgram(): Command {
   registerAiCommand(program);
   registerDevCommand(program);
   registerGateCommand(program);
+  registerInitCommand(program);
 
   // Version subcommand with detailed environment info
   program

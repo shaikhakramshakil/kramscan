@@ -2,6 +2,7 @@ import * as fs from "fs";
 import * as path from "path";
 import * as os from "os";
 import { Config, defaultScanProfiles, validateConfig, ScanProfile } from "./config-schema";
+import { findProjectConfig, deepMerge } from "./project-config";
 import { CLI_VERSION } from "../utils/theme";
 
 export type { AiProviderName, ReportFormat, Config } from "./config-schema";
@@ -339,7 +340,15 @@ export function getConfigStore(): ConfigStore {
 
 export async function getConfig(): Promise<Config> {
   await ensureInitialized();
-  return store.store;
+  const globalConfig = store.store;
+
+  // Merge project-level .kramscanrc if present
+  const project = findProjectConfig();
+  if (project) {
+    return deepMerge(globalConfig, project.config as unknown as Record<string, unknown>) as Config;
+  }
+
+  return globalConfig;
 }
 
 export async function getConfigValue(key: string): Promise<unknown> {

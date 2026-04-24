@@ -87,8 +87,45 @@ kramscan onboard              Setup wizard with environment key detection
 kramscan doctor               Verify environment health and dependencies
 kramscan config               View and edit configuration
 kramscan scans                List and inspect recent scans
+kramscan init                 Generate a .kramscanrc config for this project
 kramscan ai                   AI helpers (model listing, connectivity test)
 ```
+
+### Project Configuration
+
+Run `kramscan init` in your project root to generate a `.kramscanrc` file with team-shareable defaults:
+
+```bash
+kramscan init          # interactive setup
+kramscan init -y       # generate with defaults
+kramscan init --force  # overwrite an existing .kramscanrc
+```
+
+The generated file looks like this:
+
+```json
+{
+  "scan": {
+    "defaultProfile": "balanced",
+    "defaultTimeout": 30000,
+    "strictScope": true,
+    "exclude": ["logout", "signout", "delete"]
+  },
+  "report": {
+    "defaultFormat": "markdown",
+    "companyName": "Your Company"
+  },
+  "gate": {
+    "failOn": "high",
+    "maxVulns": 0
+  },
+  "plugins": {
+    "disabled": []
+  }
+}
+```
+
+Project-level settings override the global config (`~/.kramscan/config.json`). API keys are never stored in `.kramscanrc` — use `kramscan onboard` or environment variables for credentials. Commit the file to version control so your team shares the same scan settings.
 
 ### Dev Mode
 
