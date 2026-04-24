@@ -55,9 +55,7 @@ export interface ProjectConfig {
  * or null if no file is found.
  */
 export function findProjectConfig(startDir: string = process.cwd()): { config: ProjectConfig; filepath: string } | null {
-    let dir = path.resolve(startDir);
-
-    while (true) {
+    for (let dir = path.resolve(startDir); ; dir = path.dirname(dir)) {
         const candidate = path.join(dir, PROJECT_CONFIG_FILENAME);
 
         if (fs.existsSync(candidate)) {
@@ -79,8 +77,7 @@ export function findProjectConfig(startDir: string = process.cwd()): { config: P
         }
 
         const parent = path.dirname(dir);
-        if (parent === dir) break; // reached root
-        dir = parent;
+        if (parent === dir) break; // reached filesystem root
     }
 
     return null;
