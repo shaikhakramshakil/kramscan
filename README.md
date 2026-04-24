@@ -499,30 +499,6 @@ node dist/index.js
 
 <br />
 
----
-
-<br />
-
-## 🤖 AI Contributors
-
-This project was built with the assistance of AI pair-programming tools:
-
-<div align="center">
-
-| | Contributor | Role |
-| :---: | :--- | :--- |
-| <img src="https://www.google.com/s2/favicons?sz=32&domain=anthropic.com" width="20" /> | **Claude** (Anthropic) | AI pair-programmer — architecture, code generation, debugging, CI/CD |
-| <img src="https://www.google.com/s2/favicons?sz=32&domain=deepmind.google" width="20" /> | **Gemini** (Google DeepMind) | AI pair-programmer — code generation, refactoring, documentation |
-
-</div>
-
-> All AI-generated code has been reviewed, tested, and approved by the project maintainer.
-
-<br />
-
----
-
-<br />
 
 ## 📄 License
 This project is licensed under the **MIT License** — see the [LICENSE](LICENSE) file for details.
