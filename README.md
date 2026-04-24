@@ -273,36 +273,6 @@ The scanning engine can also use AI to generate context-aware payloads, improvin
 
 ---
 
-## Roadmap
-
-### Near-term
-
-- **Authentication support** — Login-aware scanning with session cookies and OAuth token injection
-- **OWASP ZAP integration** — Use ZAP as a proxy backend for deeper active scanning
-- **HTML report format** — Interactive HTML reports with filterable tables and charts
-- **Custom rule engine** — YAML-based rules for organization-specific policies
-- **Webhook notifications** — Slack, Discord, and Teams alerts on scan completion
-
-### Mid-term (v0.5 – v1.0)
-
-- **API scanning mode** — REST/GraphQL endpoint testing with automatic schema discovery
-- **SARIF output** — Standard format for GitHub Security tab integration
-- **Multi-target batch scans** — Scan multiple URLs from a file with parallel execution
-- **Docker image** — Pre-built container for cloud/CI environments
-- **Plugin marketplace** — Community-contributed plugins via `kramscan plugin install`
-
-### Long-term
-
-- **Dashboard UI** — Web-based dashboard for managing scans, trends, and team collaboration
-- **Compliance mapping** — Map findings to OWASP Top 10, PCI-DSS, SOC 2, and NIST frameworks
-- **Attack surface discovery** — Subdomain enumeration, port scanning, and technology fingerprinting
-- **Remediation PRs** — AI-generated pull requests that fix detected vulnerabilities
-- **Team & org support** — Multi-user accounts with role-based access and shared scan history
-
-Have a feature request? [Open an issue](https://github.com/shaikhakramshakil/kramscan/issues).
-
----
-
 ## Contributing
 
 ```bash
